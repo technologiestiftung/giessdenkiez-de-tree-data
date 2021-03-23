@@ -1,0 +1,11 @@
+{
+  "recommendations": [
+    "ms-toolsai.jupyter",
+    "ms-python.python",
+    "littlefoxteam.vscode-python-test-adapter",
+    "tabnine.tabnine-vscode",
+    "hbenl.vscode-test-explorer",
+    "visualstudioexptteam.vscodeintellicode",
+    "dongli.python-preview"
+  ]
+}

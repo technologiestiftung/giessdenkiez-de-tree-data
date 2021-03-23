@@ -1,0 +1,7 @@
+owslib==0.23.0
+requests==2.25.1
+pandas==1.0.3
+geopandas==0.7.0
+Shapely==1.6.4.post2
+pytest==6.2.2
+pytest-cov==2.11.1
