@@ -9,9 +9,12 @@ def transform_new_tree_data(new_trees):
     new_trees = new_trees.rename(columns={"art_dtsch": "artdtsch", "art_bot": "artBot", "gattung_de": "gattungdeutsch", "eigentueme": "eigentuemer", "geometry": "geom", "namenr": "strname" })
     new_trees['type'] = 'anlage'
 
-    new_trees['standortnr'] = new_trees['standortnr'].astype(int).astype(str)
-    new_trees['kennzeich'] = new_trees['kennzeich'].astype(int).astype(str)
-    
+    new_trees['standortnr_2'] = new_trees['kennzeich'].astype(int).astype(str)
+    new_trees['kennzeich'] = new_trees['standortnr'].astype(int).astype(str)
+    new_trees['standortnr'] = new_trees['standortnr_2'].astype(int).astype(str)
+    new_trees = pd.DataFrame(new_trees)
+    new_trees = new_trees.drop(['standortnr_2','geom'], axis=1)
+
     return new_trees
 
 # geometry?
@@ -43,6 +46,33 @@ def transform_new_tree_data(new_trees):
     
     
 def compare_tree_data(new_trees, old_trees):
+    old_trees = pd.DataFrame(old_trees)
+    new_trees = pd.DataFrame(new_trees)
+    old_trees = old_trees.drop(['radolan_days'], axis=1)
+
+    updated = old_trees.merge(new_trees, on = ['standortnr','kennzeich'], how='inner')
+    updated = gpd.GeoDataFrame(updated, geometry='geom')
+    updated.to_file("tree_data/data_files/updated_tmp.json", driver="GeoJSON")
+
+
+    #deleted_trees = pd.merge(old_trees, new_trees, on = ['standortnr','kennzeich'], how="left")
+    #print(deleted_trees)
+    #deleted_trees = deleted_trees.drop(['geom'], axis=1)
+    deleted_trees = old_trees.merge(new_trees, on = ['standortnr','kennzeich'], how='left')
+    print(deleted_trees)
+    deleted_trees = deleted_trees[deleted_trees['artBot_y'].isnull()]
+    print(deleted_trees)
+    deleted_trees = gpd.GeoDataFrame(deleted_trees, geometry='geom')
+    deleted_trees.to_file("tree_data/data_files/deleted_tmp.json", driver="GeoJSON")
+
+    added_trees = old_trees.merge(new_trees, on = ['standortnr','kennzeich'], how='right')
+    print(added_trees)
+    added_trees = added_trees[added_trees['artBot_x'].isnull()]
+    print(added_trees)
+    added_trees = gpd.GeoDataFrame(added_trees, geometry='geom')
+    added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
+
     
-    result = pd.merge(new_trees, old_trees, on = ['standortnr', 'kennzeich'])
-    return result
+
+
+    return updated

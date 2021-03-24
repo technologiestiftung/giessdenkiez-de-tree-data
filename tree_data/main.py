@@ -2,18 +2,18 @@
 import pandas as pd
 
 from utils.get_new_data import get_wfs, read_new_tree_data
-from utils.interact_with_database import start_db_connection, close_db_connection, read_old_tree_data
+from utils.interact_with_database import start_db_connection, close_db_connection, read_old_tree_data, load_to_db, execute_batch
 from utils.process_data import transform_new_tree_data, compare_tree_data
 
 
 # TO-DO: Create .yaml for variable Input?
 
 # set urls to wfs services
-wfs_trees_streets = 'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_wfs_baumbestand'
-wfs_trees_parks = 'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_wfs_baumbestand_an'
+#wfs_trees_streets = 'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_wfs_baumbestand'
+#wfs_trees_parks = 'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_wfs_baumbestand_an'
 #'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_bparkplatz'
 # Specify the output Format of the WFS for fetching the data
-wfs_output_format = 'text/xml; subtype=gml/3.2.1'
+#wfs_output_format = 'text/xml; subtype=gml/3.2.1'
 new_trees_filename = "tree_data/data_files/s_wfs_baumbestand_an_test.gml"
 
 
@@ -32,20 +32,22 @@ old_trees = read_old_tree_data(conn)
 
 
 
-print(new_trees.columns)
-print(new_trees['namenr'])
-print(old_trees.columns)
+#print(new_trees.columns)
+#print(old_trees)
 #print(old_trees['namenr'])
 
 new_trees = transform_new_tree_data(new_trees)
-print(new_trees)
+#print(new_trees)
 
-print(type(new_trees['standortnr'][1]))
+print(type(new_trees['kennzeich'][1]))
+print(type(old_trees['kennzeich'][1]))
 
-result = compare_tree_data(new_trees, old_trees)
-print(result)
+updated = compare_tree_data(new_trees, old_trees)
+
+
 # create_updated_tree_df()
-# load_to_db()
+execute_batch(conn, updated, 'trees_v2', page_size=100)
+#load_to_db(conn, updated)
 
 close_db_connection(conn)
 
