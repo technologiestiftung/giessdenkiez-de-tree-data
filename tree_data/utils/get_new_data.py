@@ -1,6 +1,7 @@
 import geopandas as gpd
 from owslib.wfs import WebFeatureService
 from requests import Request
+import warnings
 
 def get_wfs(wfs_url, wfs_output_format, outfile_name):
 
@@ -20,7 +21,11 @@ def get_wfs(wfs_url, wfs_output_format, outfile_name):
 
 
 def read_new_tree_data(new_trees_filename):
+
+   # with warnings.catch_warnings(): 
+        #warnings.simplefilter('ignore') # gpd.read_file shows a warning due to a problem with the fiona package in the current version. this can be ignored for now.
     new_trees = gpd.read_file(new_trees_filename)
+
     return new_trees
 
 
