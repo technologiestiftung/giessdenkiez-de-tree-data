@@ -1,108 +1,128 @@
 import geopandas as gpd
 import pandas as pd
+import logging
+import numpy as np
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
-def transform_new_tree_data(new_trees_streets, new_trees_parks):
+def transform_new_tree_data(new_trees):
+    """Takes the new tree data and extracts the data columns that are needed for comparision with old tree data. Does also change datatypes of some columns.
 
-    new_trees_streets['type'] = 'strasse'
-    new_trees_parks['type'] = 'anlage'
+    Args:
+        new_trees (DataFrame): Raw new tree data, as loaded from files by read_tree_data().
 
-    new_trees = pd.concat([new_trees_streets,new_trees_parks],ignore_index=True)
+    Returns:
+        transformed_trees (DataFrame): Extracted tree data.
+    """
 
-    #print(new_trees)
+    # if keeping the geometry column, transform data to the crs of our old tree dataset
+    #transformed_trees = transformed_trees.to_crs("EPSG:4326")
 
-    new_trees = new_trees.drop(['fid', 'gml_id',"art_dtsch","art_bot","gattung_de", "eigentueme","namenr","hausnr",'gattung_deutsch', 'gattung', 'strname',
-       'zusatz','bezirk', 'eigentuemer','geometry'],axis = 1)
-    print(new_trees.columns)
-    #new_trees = new_trees.rename(columns={"art_dtsch": "artdtsch", "art_bot": "artBot", "gattung_de": "gattungdeutsch", "eigentueme": "eigentuemer", "geometry": "geom", "namenr": "strname" })
-    
-   # print(new_trees.columns)
-    new_trees['standortnr_2'] = new_trees['kennzeich'].astype(str)
-    new_trees['kennzeich'] = new_trees['standortnr'].astype(str)
-    new_trees['standortnr'] = new_trees['standortnr_2'].astype(str)
-    # new_trees = pd.DataFrame(new_trees)
-    new_trees = new_trees.drop(['standortnr_2'], axis=1)
-    #new_trees = new_trees.set_geometry("geometry")
-    #print(new_trees.crs)
-    #new_trees = new_trees.to_crs("EPSG:4326")
-    print(new_trees.columns)
-    
-    return new_trees
+    # in our case we don't use the geometry of the new data, so we can transform the geodataframe to a dataframe
+    transformed_trees = pd.DataFrame(new_trees)
 
-# geometry?
-    
+    # only keep the needed data columns
+    transformed_trees = new_trees.drop(['fid', 'gml_id',"art_dtsch","art_bot","gattung_de", "eigentueme","namenr","hausnr",'gattung_deutsch', 'gattung', 'strname',
+       'zusatz','bezirk', 'eigentuemer','geometry','pflanzjahr'],axis = 1)
 
-#       ['id', 'lat', 'lng', 
-#         'hausnr', 'zusatz', 
-#       'adopted', 'watered', 'radolan_sum', 'radolan_days', 'caretaker']
+    # replace NA values with 'undefined' and transform dataformats to string
+    for column in transformed_trees.columns:
+        if isinstance(transformed_trees[column][0],str) == False:
+            transformed_trees[column] = transformed_trees[column].fillna('99999')
+            transformed_trees[column] = transformed_trees[column].astype(int).astype(str)
+    transformed_trees = transformed_trees.replace(['99999'], 'undefined')
+    transformed_trees = transformed_trees.replace('', 'undefined')
+ 
+    # in our current old data, standortnr and kennzeichen are reversed, so we have to reverse it here also
+    transformed_trees['standortnr_2'] = transformed_trees['kennzeich']
+    transformed_trees['kennzeich'] = transformed_trees['standortnr'].astype(str)
+    transformed_trees['standortnr'] = transformed_trees['standortnr_2'].astype(str)
+    transformed_trees = transformed_trees.drop(['standortnr_2'], axis=1)
 
-    # new_trees['pflanzjahr'] = new_trees['pflanzjahr'] .fillna('99999')
-    # new_trees['standalter'] = new_trees['standalter'] .fillna('99999')
-    # new_trees['baumhoehe'] = new_trees['baumhoehe'] .fillna('99999')
-    # new_trees['kronedurch'] = new_trees['kronedurch'] .fillna('99999')
-    # new_trees['hausnr'] = new_trees['hausnr'] .fillna('99999')
-    # new_trees['zusatz'] = new_trees['zusatz'] .fillna('99999')
-    # new_trees['stammumfg'] = new_trees['stammumfg'] .fillna('99999')
-
-
-    # new_trees['pflanzjahr'] = new_trees['pflanzjahr'].astype(int).astype(str)
-    # new_trees['standalter'] = new_trees['standalter'].astype(int).astype(str)
-    # new_trees['kronedurch'] = new_trees['kronedurch'].astype(int).astype(str)
-    # new_trees['baumhoehe'] = new_trees['baumhoehe'].astype(int).astype(str)
-    # new_trees['baumhoehe'] = new_trees['baumhoehe'].astype(int).astype(str)
-    # new_trees['stammumfg'] = new_trees['stammumfg'].replace(['99999'], 'NaN')
-    # new_trees = new_trees.replace(['99999'], 'undefined')
-
-    # print(newtrees['pflanzjahr'])
-    # print(newtrees.replace('', 'undefined'))
+    return transformed_trees
     
     
-def compare_tree_data(new_trees, old_trees):
-    #old_trees = pd.DataFrame(old_trees)
-    new_trees = pd.DataFrame(new_trees)
-    old_trees = old_trees.drop(['radolan_days'], axis=1)
-    #pd.set_option("display.max_rows", 125, "display.max_columns", 10)
-    print("AAAAAAAA")
-    assert "standortnr" in old_trees.columns
-    #print(old_trees['standortnr'])
-    print("BBBBBBBBB")
-    assert "standortnr" in new_trees.columns
-    print(new_trees['standortnr'])
-    
-    updated = old_trees.merge(new_trees, on = ['standortnr','kennzeich'], how ='inner')#, how='inner') #125
-    print(updated)
-    updated['diff_alter']=updated['standalter_y'].astype(int)-updated['standalter_x'].astype(int)
-    print(updated['diff_alter'])
-    updated.to_file("tree_data/data_files/updated_tmp.json", driver="GeoJSON")
-    updated = updated.drop(['lat', 'lng', 'artdtsch', 'artBot', 'gattungdeutsch', 'gattung',
-       'strname', 'hausnr', 'zusatz', 'pflanzjahr_x', 'standalter_x',
-       'kronedurch_x', 'stammumfg_x', 'type_x', 'baumhoehe_x', 'bezirk',
-       'eigentuemer', 'adopted', 'watered', 'radolan_sum', 'geom',
-       'standortnr', 'kennzeich', 'caretaker', 'type_y'], axis =1)
-    #updated = gpd.GeoDataFrame(updated, geometry='geom')
-    print(updated.columns)
-    
-    #exit()
-    
-    #deleted_trees = pd.merge(old_trees, new_trees, on = ['standortnr','kennzeich'], how="left")
-    #print(deleted_trees)
-    # #deleted_trees = deleted_trees.drop(['geom'], axis=1)
-    # deleted_trees = old_trees.merge(new_trees, on = ['standortnr','kennzeich'], how='left')
-    # #print(deleted_trees)
-    # deleted_trees = deleted_trees[deleted_trees['artBot_y'].isnull()]
-    # #print(deleted_trees)
-    
-    # deleted_trees = gpd.GeoDataFrame(deleted_trees, geometry='geometry')
-    # #deleted_trees.to_file("tree_data/data_files/deleted_tmp.json", driver="GeoJSON")
+def compare_tree_data(transformed_trees, old_trees):
+    """[summary]
 
-    # added_trees = old_trees.merge(new_trees, on = ['standortnr','kennzeich'], how='right')
-    # print(added_trees)
-    # added_trees = added_trees[added_trees['artBot_x'].isnull()]
-    # print(added_trees)
-    # added_trees = gpd.GeoDataFrame(added_trees, geometry='geometry')
-    #added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
+    Args:
+        transformed_trees ([type]): [description]
+        old_trees ([type]): [description]
 
+    Returns:
+        [type]: [description]
+    """
+
+    # find all trees that exist in old AND in the new dataset
+    updated_trees = old_trees.merge(transformed_trees, on = ['standortnr','kennzeich'], how ='inner') #125
+
+    # count number of updated trees
+    tree_count = len(updated_trees.index)
+    if tree_count > 0:
+        logger.info("🌳 Matched old and new tree datasets. " + str(tree_count) + " matching trees were found. They were saved for updating the data.")
+    # stop script if no updated trees were found
+    else:
+        msg = f"❌  No matching trees in old and new dataset were found. Something went wrong."
+        logger.error(msg)
+        raise Exception(msg)
     
+    # Calculate some statistics about the updated attributes
+    try:
+        logger.info('📶 Some statistics about difference between old and new values of attributes: ')
+        for attribute in ['standalter','kronedurch','baumhoehe','stammumfg']:
+            mean = (updated_trees[attribute+'_y'].astype(float)-updated_trees[attribute+'_x'].astype(float)).describe()
+            logger.info('📶 ' + attribute + ': mean = ' + str(mean[1]) + ' ,max = ' + str(mean[7]) + ' ,min = ' + str(mean[3]))
+    except:
+        logger.info('❌  No statistics about updated values available.')
+
+    # save subset of updated tree data as geojson file
+    #updated_trees.to_file("tree_data/data_files/updated_trees_tmp.json", driver="GeoJSON")
+
+    # delete unused attributes
+    updated_trees = updated_trees.drop(['standalter_x',
+       'kronedurch_x', 'stammumfg_x', 'baumhoehe_x', 
+       'standortnr', 'kennzeich','geom'], axis=1)
 
 
-    return updated
+    # find all trees that exist in the old BUT NOT in the new dataset
+    deleted_trees = pd.merge(old_trees, transformed_trees, on = ['standortnr','kennzeich'], how="left")
+    deleted_trees = old_trees.merge(transformed_trees, on = ['standortnr','kennzeich'], how='left')
+    deleted_trees = deleted_trees[deleted_trees['baumhoehe_y'].isnull()] # 15
+
+    # count number of deleted trees
+    tree_count = len(deleted_trees.index)
+    if tree_count > 0:
+        logger.info("🌳 Matched old and new tree datasets. " + str(tree_count) + " trees were found that exist in the old BUT NOT in the new dataset. They were saved for beeing deleted from the database.")
+    # stop script if no deleted trees were found
+    else:
+        msg = f"🌳 No deleted trees were found."
+        logger.error(msg)
+        raise Exception(msg)
+ 
+    # save subset of deleted tree data as geojson file
+    # deleted_trees.to_file("tree_data/data_files/deleted_tmp.json", driver="GeoJSON")
+
+    # delete unused attributes
+    deleted_trees = deleted_trees[['id']]
+ 
+
+    # find all trees that which does not exist in the old BUT IN the new dataset
+    added_trees = old_trees.merge(transformed_trees, on = ['standortnr','kennzeich'], how='right')
+    added_trees = added_trees[added_trees['baumhoehe_x'].isnull()] #210
+
+    #count number of added trees
+    tree_count = len(added_trees.index)
+    if tree_count > 0:
+        logger.info("🌳 Matched old and new tree datasets. " + str(tree_count) + " trees were found that do not exist in the old BUT IN in the new dataset. They were saved for beein added to the database.")
+    # stop script if no addedtrees were found
+    else:
+        msg = f"🌳  No added trees were found."
+        logger.error(msg)
+        raise Exception(msg)
+
+    # save subset of added tree data as geojson file
+    added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
+
+
+    return updated_trees, deleted_trees, added_trees

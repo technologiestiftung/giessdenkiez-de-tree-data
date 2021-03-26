@@ -15,142 +15,100 @@ logger.setLevel(logging.DEBUG)
 
 
 def start_db_connection():
+    """Loads database parameters from a .env-file and connects to the database.
 
+    Raises:
+        Exception: Connecting to the database was not successful.
 
+    Returns:
+        class 'sqlalchemy.engine.base.Engine': The engine object for connecting to the database.
+    """
+
+    # load database parameters from .env
     load_dotenv()
-
     # check if all required environmental variables are accessible
     for env_var in ["PG_DB", "PG_PORT", "PG_USER", "PG_PASS", "PG_DB"]:
         if env_var not in os.environ:
             logger.error("❌Environmental Variable {} does not exist".format(env_var))
-
+    # declare variables for database parameters
     pg_server = os.getenv("PG_SERVER")
     pg_port = os.getenv("PG_PORT")
     pg_username = os.getenv("PG_USER")
     pg_password = os.getenv("PG_PASS")
     pg_database = os.getenv("PG_DB")
-   
-    # dsn = f"host='{pg_server}' port={pg_port} user='{pg_username}' password='{pg_password}' dbname='{pg_database}'"
 
-    # try:
-    #     conn = psycopg2.connect(dsn)
-    #     logger.info("🗄 Database connection established")
-    # except:
-    #     logger.error("❌Could not establish database connection")
-    #     conn = None
-        
-    # conn.close()
-
+    # create databse connection url from variables
     conn_string ="postgresql://"+pg_username+":"+pg_password+"@"+pg_server+":"+pg_port+"/"+pg_database
 
+    # connect to the database
+    conn = create_engine(conn_string)
     try:
-        conn = create_engine(conn_string)
+        conn.connect()
         logger.info("🗄  Database connection established")
 
         return conn
-        
+    # stop script if connection to database was not succesfull
     except:
         msg = f"❌ Could not establish a database connection to {conn_string}"
         logger.error(msg)
         raise Exception(msg)
 
-    
-
-
 
 def read_old_tree_data(conn):
-    sql = 'SELECT * FROM trees'
-    old_trees = gpd.GeoDataFrame.from_postgis(sql, conn, geom_col='geom')
-    old_trees.to_postgis('trees_test1', conn, if_exists='replace')
-    old_trees.to_postgis('trees_test2', conn, if_exists='replace')
+    """Load currently used "old" tree data from the database to a dataframe.
+
+    Args:
+        conn (class 'sqlalchemy.engine.base.Engine'): The engine object for connecting to the database.
+
+    Returns:
+        GeoDataFrame: Whole tree data that is currently stored in the database.
+    """
+
+    # create query for selecting the data table with trees
+    sql_query = 'SELECT * FROM trees'
+    # import data and create dataframe
+    old_trees = gpd.GeoDataFrame.from_postgis(sql_query, conn, geom_col='geom')
+
+    # keep only columns that are needed for comparing, merging or checking the data
+    old_trees = old_trees[['id','kennzeich','standortnr','geom', 'standalter',
+       'kronedurch', 'stammumfg', 'baumhoehe']]
+
+    # count number of trees
+    tree_count = len(old_trees.index)
+    if tree_count > 0:
+        logger.info("🌳 Loaded old tree data from the Database. The dataset includes " + str(tree_count) + " trees.")
+    # stop script if no trees were loaded from the database
+    else:
+        msg = f"❌  No trees loaded from the database. Something went wrong."
+        logger.error(msg)
+        raise Exception(msg)
+
+    # create a duplicated table for testing
+    #old_trees.to_postgis('trees_test1', conn, if_exists='replace')
+    
     return old_trees
     
 
+def update_db(conn, result):
+    """[summary]
 
-def execute_batch(conn, df):
+    Args:
+        conn (class 'sqlalchemy.engine.base.Engine'): The database engine object returned by start_db_connection().
+        result ([type]): [description]
+    """
 
-    df.to_postgis("trees_v222", conn)
-
-    # """
-    # Using psycopg2.extras.execute_batch() to insert the dataframe
-    # """
-    # # Create a list of tupples from the dataframe values
-    # #tuples = [tuple(x) for x in df.to_numpy()]
-    # tuples = []
-    # for index, row in df.iterrows():
-    #     tuples.append([row.lat, row.artBot_x])
-    # print(tuples)
-    # # Comma-separated dataframe columns
-    # cols = ','.join(['artBot','lat'])
-    # # SQL quert to execute
-    # query  = "INSERT INTO %s(%s) VALUES(%%s,%%s)" % (table, cols)
-    # cursor = conn.cursor()
-    # try:
-    #     print('here')
-    #     psycopg2.extras.execute_batch(cursor, query, tuples, page_size)
-    #     conn.commit()
-    # except (Exception, psycopg2.DatabaseError) as error:
-    #     print("Error: %s" % error)
-    #     conn.rollback()
-    #     cursor.close()
-    #     return 1
-    # print("execute_batch() done")
-    # cursor.close()
-
-def load_to_db(conn, result):
-    
-    print('###')
     result.to_sql('tree_updates_tmp', conn, if_exists='replace')
     #result.to_postgis('tree_updates_tmp', conn, if_exists='replace')
     print('########')
 
-    with conn.connect() as con:
-        sql = 'UPDATE trees_test1 SET pflanzjahr = tree_updates_tmp.diff_alter FROM tree_updates_tmp WHERE tree_updates_tmp.id = trees_test1.id'
-        rs = con.execute(sql)
+    
+    #To-Do:
+    sql = 'UPDATE trees_test1 SET kronedurch = tree_updates_tmp.diff_alter FROM tree_updates_tmp WHERE tree_updates_tmp.id = trees_test1.id'
+    rs = conn.execute(sql)
 
+    #sql = 'DROP TABLE tree_updates_tmp'
+    #rs = conn.execute(sql)
 
-    # sql = """
-    #     CREATE TABLE trees (
-    #     id text PRIMARY KEY,
-    #     lat text,
-    #     lng text,
-    #     artdtsch text,
-    #     "artBot" text,
-    #     gattungdeutsch text,
-    #     gattung text,
-    #     strname text,
-    #     hausnr text,
-    #     zusatz text,
-    #     pflanzjahr text,
-    #     standalter text,
-    #     kronedurch text,
-    #     stammumfg text,
-    #     type text,
-    #     baumhoehe text,
-    #     bezirk text,
-    #     eigentuemer text,
-    #     adopted text,
-    #     watered text,
-    #     radolan_sum integer,
-    #     radolan_days integer[],
-    #     geom geometry,
-    #     standortnr text,
-    #     kennzeich text,
-    #     caretaker text
-    #     )"""
-    #cur = conn.cursor()
-    #cur.execute(sql)
-
-
-def close_db_connection(conn):
-    try:
-        conn.close()
-        print('Closed connection to DB')
-    except:
-        logger.error("❌Could not close connection to DB")
-        conn = None
-
-
-
+    # TO-DO: add and delete data
 
 

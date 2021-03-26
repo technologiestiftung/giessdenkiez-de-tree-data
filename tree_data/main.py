@@ -1,7 +1,7 @@
 import logging
 
 from utils.get_new_data import read_new_tree_data
-from utils.interact_with_database import start_db_connection, read_old_tree_data, load_to_db, execute_batch
+from utils.interact_with_database import start_db_connection, read_old_tree_data, update_db
 from utils.process_data import transform_new_tree_data, compare_tree_data
 
 logging.basicConfig()
@@ -24,15 +24,15 @@ old_trees = read_old_tree_data(conn)
 
 
 # Import raw tree data as dataframe from files. Filenames are set in config.yaml
-new_trees_streets, new_trees_parks = read_new_tree_data([new_trees_streets_filename, new_trees_parks_filename])
+new_trees = read_new_tree_data([new_trees_streets_filename, new_trees_parks_filename])
 # Transform new tree data to needed schema/format.
-new_trees = transform_new_tree_data(new_trees_streets, new_trees_parks)
+transformed_trees = transform_new_tree_data(new_trees)
 
 
 # Compare new tree data with old tree data and save new, updated and deleted tree data.
-updated = compare_tree_data(new_trees, old_trees)
+updated_trees, deleted_trees, added_trees = compare_tree_data(transformed_trees, old_trees)
 # Bring changes to the database by updating the current tree table.
-load_to_db(conn, updated)
+update_db(conn, updated_trees)
 
 
 
