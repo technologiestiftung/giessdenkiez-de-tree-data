@@ -2,20 +2,16 @@ import logging
 
 from utils.get_new_data import read_new_tree_data
 from utils.interact_with_database import start_db_connection, read_old_tree_data, update_db
-from utils.process_data import transform_new_tree_data, compare_tree_data
+from utils.process_data import read_config, transform_new_tree_data, compare_tree_data
 
+# logger configuration
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-# TO-DO: Create .yaml for variable Input?
-
-
-new_trees_streets_filename = "tree_data/data_files/s_wfs_baumbestand_test.gml"
-new_trees_parks_filename = "tree_data/data_files/s_wfs_baumbestand_an_test.gml"
-
-#####
+# Read parameters from config.yaml
+new_trees_paths_list = read_config()
 
 # Connect to the database. Database parameters are set in the .env
 conn = start_db_connection()
@@ -24,7 +20,7 @@ old_trees = read_old_tree_data(conn)
 
 
 # Import raw tree data as dataframe from files. Filenames are set in config.yaml
-new_trees = read_new_tree_data([new_trees_streets_filename, new_trees_parks_filename])
+new_trees = read_new_tree_data(new_trees_paths_list)
 # Transform new tree data to needed schema/format.
 transformed_trees = transform_new_tree_data(new_trees)
 

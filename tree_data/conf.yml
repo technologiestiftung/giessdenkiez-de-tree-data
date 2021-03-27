@@ -1,0 +1,15 @@
+# conf.yml
+database-parameter-path: .env
+new-data-paths:
+  - tree_data/data_files/s_wfs_baumbestand_test.gml
+  - tree_data/data_files/s_wfs_baumbestand_an_test.gml
+schema-mapping:
+  id: id
+  lat: lat
+  lon: lon
+  artbot: artBot
+update-attributes:
+  - standalter
+  - baumhoehe
+  - kronedurch
+  - stammumfg

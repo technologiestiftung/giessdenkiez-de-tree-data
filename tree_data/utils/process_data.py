@@ -2,9 +2,23 @@ import geopandas as gpd
 import pandas as pd
 import logging
 import numpy as np
+import yaml
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+def read_config():
+
+    with open("tree_data/conf.yml", 'r') as stream:
+    try:
+        conf = yaml.safe_load(stream)
+    except yaml.YAMLError as exc:
+        logger.error("❌Something is wrong with the config.yaml file.")
+        raise 
+
+    new_trees_paths_list = conf['new-data-paths']
+
+    return new_trees_paths_list
 
 def transform_new_tree_data(new_trees):
     """Takes the new tree data and extracts the data columns that are needed for comparision with old tree data. Does also change datatypes of some columns.

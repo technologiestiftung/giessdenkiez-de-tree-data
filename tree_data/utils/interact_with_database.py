@@ -97,13 +97,13 @@ def update_db(conn, result):
         result ([type]): [description]
     """
 
-    result.to_sql('tree_updates_tmp', conn, if_exists='replace')
+    result.to_sql('tree_updates_tmp', conn, if_exists='replace', index=False)
     #result.to_postgis('tree_updates_tmp', conn, if_exists='replace')
     print('########')
 
     
     #To-Do:
-    sql = 'UPDATE trees_test1 SET kronedurch = tree_updates_tmp.diff_alter FROM tree_updates_tmp WHERE tree_updates_tmp.id = trees_test1.id'
+    sql = 'UPDATE trees_test1 SET kronedurch = tree_updates_tmp.kronedurch_y FROM tree_updates_tmp WHERE tree_updates_tmp.id = trees_test1.id'
     rs = conn.execute(sql)
 
     #sql = 'DROP TABLE tree_updates_tmp'
