@@ -93,7 +93,7 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
     # count number of updated trees
     tree_count = len(updated_trees.index)
     if tree_count > 0:
-        logger.info("🌳 Matched old and new tree datasets. " + str(tree_count) + " matching trees were found. They were saved for updating the data.")
+        logger.info("🌲 Matched tree datasets: " + str(tree_count) + " matching trees were found.")
     # stop script if no updated trees were found
     else:
         msg = f"❌  No matching trees in old and new dataset were found. Something went wrong."
@@ -105,7 +105,7 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
         logger.info('📶 Some statistics about difference between old and new values of attributes: ')
         for attribute in update_attributes_list:
             mean = (updated_trees[attribute].astype(float)-updated_trees[attribute+'_x'].astype(float)).describe()
-            logger.info('📶 ' + attribute + ': mean = ' + str(mean[1]) + ', max = ' + str(mean[7]) + ', min = ' + str(mean[3]))
+            logger.info(attribute + ': mean = ' + str(mean[1]) + ', max = ' + str(mean[7]) + ', min = ' + str(mean[3]))
     except:
         logger.info('❌  No statistics about updated values available.')
 
@@ -130,10 +130,10 @@ def find_deleted_trees(transformed_trees, old_trees, merge_attributes_list):
     # count number of deleted trees
     tree_count = len(deleted_trees.index)
     if tree_count > 0:
-        logger.info("🌳 Matched old and new tree datasets. " + str(tree_count) + " trees were found that exist in the old BUT NOT in the new dataset. They were saved for beeing deleted from the database.")
+        logger.info("🌲 Matched tree datasets: " + str(tree_count) + " trees were found that exist in the old BUT NOT in the new dataset.")
     # stop script if no deleted trees were found
     else:
-        msg = f"🌳 No deleted trees were found."
+        msg = f"🌲 No deleted trees were found."
         logger.error(msg)
  
     # save subset of deleted tree data as geojson file
@@ -165,7 +165,7 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
     #count number of added trees
     tree_count = len(added_trees.index)
     if tree_count > 0:
-        logger.info("🌳 Matched old and new tree datasets. " + str(tree_count) + " trees were found that do not exist in the old BUT IN in the new dataset. They were saved for beeing added to the database.")
+        logger.info("🌲 Matched tree datasets: " + str(tree_count) + " trees were found that do not exist in the old BUT IN in the new dataset.") 
     # stop script if no addedtrees were found
     else:
         msg = f"🌳  No added trees were found."
@@ -173,7 +173,7 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
 
     # save subset of added tree data as geojson file
     #added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
-    print(type(added_trees))
+
     return added_trees
 
 
@@ -193,10 +193,10 @@ def compare_tree_data(transformed_trees, old_trees, update_attributes_list,  mer
 
     """
 
-    updated_trees = find_updated_trees(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
-
     deleted_trees = find_deleted_trees(transformed_trees, old_trees, merge_attributes_list)
 
     added_trees = find_added_trees(transformed_trees, old_trees, merge_attributes_list)
+
+    updated_trees = find_updated_trees(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
  
     return updated_trees, deleted_trees, added_trees

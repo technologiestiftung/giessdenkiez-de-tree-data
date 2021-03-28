@@ -5,8 +5,10 @@ from utils.interact_with_database import start_db_connection, read_old_tree_data
 from utils.process_data import read_config, transform_new_tree_data, compare_tree_data
 
 # logger configuration
-logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('root')
+# FORMAT = "[%(asctime) %(name) %(levelname) - %(funcName)20s() ] %(message)s"
+FORMAT = "[%(levelname)s %(name)s] %(message)s"
+logging.basicConfig(format=FORMAT)
 logger.setLevel(logging.DEBUG)
 
 

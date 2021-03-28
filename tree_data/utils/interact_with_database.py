@@ -18,7 +18,7 @@ def start_db_connection():
     """Loads database parameters from a .env-file and connects to the database.
 
     Raises:
-        Exception: Connecting to the database was not successful.
+        Exception: Connecting to the database was not sucesfull.
 
     Returns:
         class 'sqlalchemy.engine.base.Engine': The engine object for connecting to the database.
@@ -126,7 +126,7 @@ def update_db(conn, result, update_attributes_list, table_name):
     sql_d = 'DROP TABLE tree_updates_tmp'
     rs = conn.execute(sql_d)
 
-    logger.info("🌳 Sucessfully updated the columns " + str(update_attributes_list) + " in data table " + table_name + " for " + str(len(result)) + " rows by the new tree data.")
+    logger.info("🔄 Sucessfully updated columns " + str(update_attributes_list) + " in data table '" + table_name + "' for " + str(len(result)) + " rows.")
 
 
 def delete_from_db(conn, result, update_attributes_list, table_name):
@@ -146,7 +146,7 @@ def delete_from_db(conn, result, update_attributes_list, table_name):
     sql = "DELETE from " + table_name + " WHERE id IN " + str(tuple(result['id']))
     rs = conn.execute(sql)
 
-    logger.info("🌳 Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
+    logger.info("⬇️  Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
 
 def add_to_db(conn, result, update_attributes_list, table_name):
     """Takes the subset of added trees and adds the respective rows to the dataset in the database.
@@ -175,4 +175,4 @@ def add_to_db(conn, result, update_attributes_list, table_name):
     append_sql = f"INSERT INTO {table_name}({cols}) SELECT * FROM added_trees_tmp"
     conn.execute(append_sql)
 
-    logger.info("✅ Sucessfully added " + str(len(result)) + " new trees to the data table " + table_name + ".")
+    logger.info("⬆️  Sucessfully added " + str(len(result)) + " new trees to the database table '" + table_name + "'.")
