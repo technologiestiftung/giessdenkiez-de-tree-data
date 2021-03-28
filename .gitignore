@@ -116,4 +116,4 @@ dmypy.json
 .DS_Store
 
 data_files/
-.drawio
+*.drawio
