@@ -110,7 +110,8 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
         logger.info('❌  No statistics about updated values available.')
 
     # save subset of updated tree data as geojson file
-    #updated_trees.to_file("tree_data/data_files/updated_trees_tmp.json", driver="GeoJSON")
+    updated_trees = updated_trees.drop(['geometry'],axis=1)
+    updated_trees.to_file("tree_data/data_files/updated_trees_tmp.json", driver="GeoJSON")
 
     # delete unused attributes
     updated_trees = updated_trees[update_attributes_list + ['id']]
@@ -135,9 +136,10 @@ def find_deleted_trees(transformed_trees, old_trees, merge_attributes_list):
     else:
         msg = f"🌲 No deleted trees were found."
         logger.error(msg)
- 
+
+    deleted_trees = deleted_trees.drop(['geometry'],axis=1)
     # save subset of deleted tree data as geojson file
-    # deleted_trees.to_file("tree_data/data_files/deleted_tmp.json", driver="GeoJSON")
+    deleted_trees.to_file("tree_data/data_files/deleted_tmp.json",driver="GeoJSON")
 
     # delete unused attributes
     deleted_trees = deleted_trees[['id']]
@@ -172,7 +174,7 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
         logger.error(msg)
 
     # save subset of added tree data as geojson file
-    #added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
+    added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
 
     return added_trees
 

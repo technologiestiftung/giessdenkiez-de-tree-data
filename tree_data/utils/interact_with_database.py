@@ -84,6 +84,8 @@ def read_old_tree_data(conn, database_dict):
     # keep only columns that are needed for comparing, merging or checking the data
     old_trees = old_trees[['id','kennzeich','standortnr','geom', 'standalter',
        'kronedurch', 'stammumfg', 'baumhoehe']]
+    old_trees['standortnr'] = old_trees['standortnr'].str.split('.').str[0]
+
 
     # count number of trees
     tree_count = len(old_trees.index)

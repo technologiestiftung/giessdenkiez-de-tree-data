@@ -1,12 +1,12 @@
 # conf.yml
 database:
   parameter-path: .env
-  data-table-name: trees
+  data-table-name: trees_full
   replace-table: False
 
 new-data-paths:
-  - tree_data/data_files/s_wfs_baumbestand_test.gml
-  - tree_data/data_files/s_wfs_baumbestand_an_test.gml
+  - tree_data/data_files/s_wfs_baumbestand.gml
+  - tree_data/data_files/s_wfs_baumbestand_an.gml
 
 data-schema:
   mapping:
