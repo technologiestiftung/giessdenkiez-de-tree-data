@@ -17,24 +17,20 @@ data-schema:
     gml_id: gmlid
   merge-on:
     - gmlid
-    # - kennzeich
-    # - standortnr
   update:
-    #- standalter
-    #- baumhoehe
-    #- kronedurch
-    #- stammumfg
+    - standalter
+    - baumhoehe
+    - kronedurch
+    - stammumfg
     - gmlid
-    #- lat
-    #- lng
-    #- standortnr
-    #- kennzeich
-    #- artdtsch
-    #- artbot
-    #- gattungdeutsch
-    #- gattung
-    #- pflanzjahr
-    #- geom
-
+    - lat
+    - lng
+    - standortnr
+    - kennzeich
+    - artdtsch
+    - artbot
+    - gattungdeutsch
+    - gattung
+    - pflanzjahr
 
 

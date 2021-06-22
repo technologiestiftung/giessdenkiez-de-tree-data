@@ -177,9 +177,11 @@ def add_to_db(conn, result, update_attributes_list, table_name):
     """
 
     # write added trees to a new table in database
+
+    #result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
+    result['geometry'] = gpd.points_from_xy(result.lat, result.lng)
     result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
     result.to_postgis('added_trees_tmp', conn, if_exists='replace', index=False)
-
     try:
         # execute sql query for adding the data
         sql = "UPDATE added_trees_tmp SET geom = ST_SetSRID(geom,4326)"
