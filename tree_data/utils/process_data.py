@@ -54,6 +54,9 @@ def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
     # rename columns based on the columns of the old data
     transformed_trees = new_trees.rename(columns=schema_mapping_dict)
 
+    # transform gmlid here
+    transformed_trees['gmlid'] = transformed_trees['gmlid'].str.split(pat=".").str[1]
+
     # drop not needed colums based on the columns of the old data
     for column in transformed_trees.columns:
         if column == "geometry":
@@ -71,14 +74,15 @@ def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
     transformed_trees = transformed_trees.replace(['99999'], 'undefined')
     transformed_trees = transformed_trees.replace('', 'undefined')
 
-    transformed_trees['lng'] = (transformed_trees.geometry.y).astype(str)
-    transformed_trees['lat'] = (transformed_trees.geometry.x).astype(str)
+    transformed_trees['lng'] = (transformed_trees.geometry.y).round(5).astype(str)
+    transformed_trees['lat'] = (transformed_trees.geometry.x).round(5).astype(str)
  
     # in our current old data, standortnr and kennzeichen are reversed, so we have to reverse it here also
-    transformed_trees['standortnr_2'] = transformed_trees['kennzeich']
-    transformed_trees['kennzeich'] = transformed_trees['standortnr'].astype(str)
-    transformed_trees['standortnr'] = transformed_trees['standortnr_2'].astype(str)
-    transformed_trees = transformed_trees.drop(['standortnr_2'], axis=1)
+    # transformed_trees['standortnr_2'] = transformed_trees['kennzeich']
+    # transformed_trees['kennzeich'] = transformed_trees['standortnr'].astype(str)
+    # transformed_trees['standortnr'] = transformed_trees['standortnr_2'].astype(str)
+    # transformed_trees = transformed_trees.drop(['standortnr_2'], axis=1)
+
 
     return transformed_trees
     
@@ -89,6 +93,28 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
 
     # find all trees that exist in old AND in the new dataset
     updated_trees = old_trees.merge(transformed_trees, on = merge_attributes_list, how ='inner', suffixes=("_x", None)) #125
+
+    # updated_trees2 = old_trees
+    # updated_trees2["standortnr"] = "0" + updated_trees2["standortnr"].astype(str)
+
+    # updated_trees2.to_file("tree_data/data_files/updated_trees_t.json", driver="GeoJSON")
+
+    # updated_trees2 = updated_trees2.merge(transformed_trees, left_on=merge_attributes_list, right_on = merge_attributes_list, how ='inner', suffixes=("_x", None))
+
+    # updated_trees3 = old_trees
+    # updated_trees3["standortnr"] = "0" + updated_trees3["standortnr"].astype(str)
+    # updated_trees3.to_file("tree_data/data_files/updated_trees_t2.json", driver="GeoJSON")
+    # updated_trees3 = updated_trees3.merge(transformed_trees, left_on=merge_attributes_list, right_on = merge_attributes_list, how ='inner', suffixes=("_x", None))
+
+    # updated_trees4 = old_trees
+    # updated_trees4["standortnr"] = "0" + updated_trees4["standortnr"].astype(str)
+    # updated_trees4 = updated_trees4.merge(transformed_trees, left_on=merge_attributes_list, right_on = merge_attributes_list, how ='inner', suffixes=("_x", None))
+
+    # updated_trees5 = old_trees
+    # updated_trees5["standortnr"] = "0" + updated_trees5["standortnr"].astype(str)
+    # updated_trees5 = updated_trees5.merge(transformed_trees, left_on=merge_attributes_list, right_on = merge_attributes_list, how ='inner', suffixes=("_x", None))
+    
+    # updated_trees = pd.concat([updated_trees,updated_trees2,updated_trees3,updated_trees4,updated_trees5])
 
     # count number of updated trees
     tree_count = len(updated_trees.index)
@@ -110,18 +136,24 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
         logger.info('❌  No statistics about updated values available.')
 
     # save subset of updated tree data as geojson file
-    #updated_trees.to_file("tree_data/data_files/updated_trees_tmp.json", driver="GeoJSON")
+    updated_trees = updated_trees.drop(['geometry'],axis=1)
+    updated_trees.to_file("tree_data/data_files/updated_trees_tmp.json", driver="GeoJSON")
 
     # delete unused attributes
     updated_trees = updated_trees[update_attributes_list + ['id']]
-
+   # print("----")
+    #print(updated_trees.geom.dtype)
+   # print("----")
+    #exit()
     return updated_trees
 
 
 def find_deleted_trees(transformed_trees, old_trees, merge_attributes_list):
 
     transformed_trees = pd.DataFrame(transformed_trees)
-
+   # print(transformed_trees.columns)
+    #print(old_trees.columns)
+    #print(merge_attributes_list)
     # find all trees that exist in the old BUT NOT in the new dataset
     deleted_trees = pd.merge(old_trees, transformed_trees, on = merge_attributes_list, how="left")
     deleted_trees = old_trees.merge(transformed_trees, on = merge_attributes_list, how='left')
@@ -131,17 +163,20 @@ def find_deleted_trees(transformed_trees, old_trees, merge_attributes_list):
     tree_count = len(deleted_trees.index)
     if tree_count > 0:
         logger.info("🌲 Matched tree datasets: " + str(tree_count) + " trees were found that exist in the old BUT NOT in the new dataset.")
+
+        deleted_trees = deleted_trees.drop(['geometry'],axis=1)
+        # save subset of deleted tree data as geojson file
+        deleted_trees.to_file("tree_data/data_files/deleted_tmp.json",driver="GeoJSON")
+
     # stop script if no deleted trees were found
     else:
         msg = f"🌲 No deleted trees were found."
         logger.error(msg)
- 
-    # save subset of deleted tree data as geojson file
-    # deleted_trees.to_file("tree_data/data_files/deleted_tmp.json", driver="GeoJSON")
+
 
     # delete unused attributes
     deleted_trees = deleted_trees[['id']]
-
+    #print(deleted_trees)
     return deleted_trees
 
 
@@ -159,20 +194,22 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
     # create id's for new trees
     id_str = ""
     for i, column in enumerate(merge_attributes_list):
-        id_str += "_" + added_trees[merge_attributes_list[i]]
+        id_str += "_21" + added_trees[merge_attributes_list[i]].str.split(pat=":").str[1]
     added_trees['id'] = id_str
 
     #count number of added trees
     tree_count = len(added_trees.index)
     if tree_count > 0:
         logger.info("🌲 Matched tree datasets: " + str(tree_count) + " trees were found that do not exist in the old BUT IN in the new dataset.") 
+
+        # save subset of added tree data as geojson file
+        added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
+        
     # stop script if no addedtrees were found
     else:
         msg = f"🌳  No added trees were found."
         logger.error(msg)
 
-    # save subset of added tree data as geojson file
-    #added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
 
     return added_trees
 
@@ -200,3 +237,4 @@ def compare_tree_data(transformed_trees, old_trees, update_attributes_list,  mer
     updated_trees = find_updated_trees(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
  
     return updated_trees, deleted_trees, added_trees
+    #return updated_trees

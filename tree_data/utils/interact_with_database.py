@@ -78,12 +78,15 @@ def read_old_tree_data(conn, database_dict):
 
      # create a duplicated table for testing if replace parameter in config.yml ist set to False
     if database_dict['replace-table'] == False:
-        old_trees.to_postgis('trees_test', conn, if_exists='replace')
-        table_name = 'trees_test'
+        table_name = 'trees_new'
+        old_trees.to_postgis(table_name, conn, if_exists='replace')
+        
 
     # keep only columns that are needed for comparing, merging or checking the data
     old_trees = old_trees[['id','kennzeich','standortnr','geom', 'standalter',
-       'kronedurch', 'stammumfg', 'baumhoehe']]
+       'kronedurch', 'stammumfg', 'baumhoehe','gmlid']]
+    old_trees['standortnr'] = old_trees['standortnr'].str.split('.').str[0]
+
 
     # count number of trees
     tree_count = len(old_trees.index)
@@ -119,9 +122,10 @@ def update_db(conn, result, update_attributes_list, table_name):
     set_str = set_str[:-2]
 
     # execute sql query for updating data
-    sql = 'UPDATE ' + table_name + ' SET ' + set_str + ' FROM tree_updates_tmp WHERE tree_updates_tmp.id = ' + table_name + '.id'
+    sql = 'UPDATE ' + table_name + ' SET ' + set_str + ' FROM tree_updates_tmp WHERE tree_updates_tmp.gmlid = ' + table_name + '.gmlid'
     rs = conn.execute(sql)
-
+    sql =  'UPDATE ' + table_name + ' SET geom = ST_SetSRID(ST_MakePoint(lat::numeric, lng::numeric), 4326)'
+    rs = conn.execute(sql)
     # delete the temporary table
     sql_d = 'DROP TABLE tree_updates_tmp'
     rs = conn.execute(sql_d)
@@ -141,12 +145,26 @@ def delete_from_db(conn, result, update_attributes_list, table_name):
 
     # write deleted trees to a new table in database
     result.to_sql('tree_deleted_tmp', conn, if_exists='replace', index=False)
+    try:
+        sql = "DELETE from trees_adopted WHERE tree_id IN " + str(tuple(result['id']))
+        rs = conn.execute(sql)
+        sql = "DELETE from trees_watered WHERE tree_id IN " + str(tuple(result['id']))
+        rs = conn.execute(sql)
 
-    # execute sql query for deleting data
-    sql = "DELETE from " + table_name + " WHERE id IN " + str(tuple(result['id']))
+        # execute sql query for deleting data
+        sql = "DELETE from " + table_name + " WHERE id IN " + str(tuple(result['id']))
+        rs = conn.execute(sql)
+
+        logger.info("⬇️  Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
+    except:
+        logger.info('❌  No trees to delete.')
+
+    # delete the temporary table
+    sql = 'DROP TABLE tree_deleted_tmp'
     rs = conn.execute(sql)
 
-    logger.info("⬇️  Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
+
+
 
 def add_to_db(conn, result, update_attributes_list, table_name):
     """Takes the subset of added trees and adds the respective rows to the dataset in the database.
@@ -159,20 +177,31 @@ def add_to_db(conn, result, update_attributes_list, table_name):
     """
 
     # write added trees to a new table in database
+
+    #result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
+    result['geometry'] = gpd.points_from_xy(result.lat, result.lng)
     result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
     result.to_postgis('added_trees_tmp', conn, if_exists='replace', index=False)
+    try:
+        # execute sql query for adding the data
+        sql = "UPDATE added_trees_tmp SET geom = ST_SetSRID(geom,4326)"
+        
+        # there is a problem with uppercase header names, so we have to bring all column names to "" here
+        rs = conn.execute(sql)
+        cols = ''
+        for c in result.columns:
+            cols += '"%s", ' % c
+        cols = cols[:-2]
+        
+        append_sql = f"INSERT INTO {table_name}({cols}) SELECT * FROM added_trees_tmp"
+        conn.execute(append_sql)
 
-    # execute sql query for adding the data
-    sql = "UPDATE added_trees_tmp SET geom = ST_SetSRID(geom,4326)"
-    
-    # there is a problem with uppercase header names, so we have to bring all column names to "" here
+        logger.info("⬆️  Sucessfully added " + str(len(result)) + " new trees to the database table '" + table_name + "'.")
+
+    except:
+        logger.info('❌  No trees to add.')
+
+
+    # delete the temporary table
+    sql = 'DROP TABLE added_trees_tmp'
     rs = conn.execute(sql)
-    cols = ''
-    for c in result.columns:
-        cols += '"%s", ' % c
-    cols = cols[:-2]
-    
-    append_sql = f"INSERT INTO {table_name}({cols}) SELECT * FROM added_trees_tmp"
-    conn.execute(append_sql)
-
-    logger.info("⬆️  Sucessfully added " + str(len(result)) + " new trees to the database table '" + table_name + "'.")

@@ -28,6 +28,7 @@ transformed_trees = transform_new_tree_data(new_trees, attribute_list, schema_ma
 
 
 # Compare new tree data with old tree data and save new, updated and deleted tree data.
+#updated_trees= compare_tree_data(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
 updated_trees, deleted_trees, added_trees = compare_tree_data(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
 # Bring tree data changes to the database by updating the current tree table.
 update_db(conn, updated_trees, update_attributes_list, table_name)

@@ -2,24 +2,35 @@
 database:
   parameter-path: .env
   data-table-name: trees
-  replace-table: False
+  replace-table: True
 
 new-data-paths:
-  - tree_data/data_files/s_wfs_baumbestand_test.gml
-  - tree_data/data_files/s_wfs_baumbestand_an_test.gml
+  - tree_data/data_files/s_wfs_baumbestand_mai21.gml
+  - tree_data/data_files/s_wfs_baumbestand_an_mai21.gml
+  #- tree_data/data_files/trees_test2.gml
 
 data-schema:
   mapping:
-    art_bot: artBot
-    artdeutsch: art_dtsch
+    art_bot: artbot
+    art_dtsch: artdtsch
     gattung_deutsch: gattungdeutsch
+    gml_id: gmlid
   merge-on:
-    - kennzeich
-    - standortnr
+    - gmlid
   update:
     - standalter
     - baumhoehe
     - kronedurch
     - stammumfg
+    - gmlid
+    - lat
+    - lng
+    - standortnr
+    - kennzeich
+    - artdtsch
+    - artbot
+    - gattungdeutsch
+    - gattung
+    - pflanzjahr
 
 
