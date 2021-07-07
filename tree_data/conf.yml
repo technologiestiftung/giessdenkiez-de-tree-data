@@ -7,7 +7,6 @@ database:
 new-data-paths:
   - tree_data/data_files/s_wfs_baumbestand_mai21.gml
   - tree_data/data_files/s_wfs_baumbestand_an_mai21.gml
-  #- tree_data/data_files/trees_test2.gml
 
 data-schema:
   mapping:
