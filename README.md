@@ -22,6 +22,6 @@ python tree_data/get_data_from_wfs.py
 ```
 To update database run
 ```bash
-python tree_data/main.py to update database
+python tree_data/main.py
 ```
 
