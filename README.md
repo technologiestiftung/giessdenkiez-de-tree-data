@@ -12,7 +12,48 @@ We use these Python scripts to automate this. Using the script `get_data_from_wf
 
 - New tree data in GML or GeoJSON format
 - config.yaml that configurates paths, tablesnames, overwritting, mapping of column names and columns to update
+```yml
+database:
+  parameter-path: .env
+  data-table-name: trees
+  replace-table: True
+
+new-data-paths:
+  - tree_data/data_files/s_wfs_baumbestand.gml
+  - tree_data/data_files/s_wfs_baumbestand_an.gml
+
+data-schema:
+  mapping:
+    art_bot: artbot
+    art_dtsch: artdtsch
+    gattung_deutsch: gattungdeutsch
+    gml_id: gmlid
+  merge-on:
+    - gmlid
+  update:
+    - standalter
+    - baumhoehe
+    - kronedurch
+    - stammumfg
+    - gmlid
+    - lat
+    - lng
+    - standortnr
+    - kennzeich
+    - artdtsch
+    - artbot
+    - gattungdeutsch
+    - gattung
+    - pflanzjahr
+```
 - .env that contains database credentials
+```yml
+PG_SERVER=
+PG_PORT=
+PG_USER=
+PG_PASS=
+PG_DB=
+```
 
 ## Example Usage
 
