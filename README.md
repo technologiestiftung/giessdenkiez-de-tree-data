@@ -1,4 +1,6 @@
-# Giessdenkiez.de Tree data 
+![](https://img.shields.io/badge/Build%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiesitftung%20Berlin-blue)
+
+# Gieß den Kiez Tree data 
 
 *This is a script to harvest tree data from a Web Feature Service from Berlins Geodata Portal and integrate it to our Gieß-den-Kiez-database.*
 
