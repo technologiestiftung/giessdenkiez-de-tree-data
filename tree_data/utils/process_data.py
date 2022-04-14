@@ -44,7 +44,7 @@ def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
     """
 
     # if keeping the geometry column, transform data to the crs of our old tree dataset
-    new_trees['geometry'] = new_trees['geometry'].set_crs("EPSG:25833")
+    new_trees['geometry'] = new_trees['geometry'].set_crs("EPSG:25833", allow_override=True)
     new_trees['geometry'] = new_trees['geometry'].to_crs("EPSG:4326")
 
 
@@ -127,14 +127,15 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
         raise Exception(msg)
     
     # Calculate some statistics about the updated attributes
+    print(updated_trees.columns)
     try:
         logger.info('📶 Some statistics about difference between old and new values of attributes: ')
         for attribute in update_attributes_list:
-            mean = (updated_trees[attribute].astype(float)-updated_trees[attribute+'_x'].astype(float)).describe()
+            mean = (pd.to_numeric(updated_trees[attribute].replace("undefined", "", regex=True))-pd.to_numeric(updated_trees[attribute+'_x'].replace("undefined", "", regex=True))).describe()
             logger.info(attribute + ': mean = ' + str(mean[1]) + ', max = ' + str(mean[7]) + ', min = ' + str(mean[3]))
     except:
         logger.info('❌  No statistics about updated values available.')
-
+        
     # save subset of updated tree data as geojson file
     updated_trees = updated_trees.drop(['geometry'],axis=1)
     updated_trees.to_file("tree_data/data_files/updated_trees_tmp.json", driver="GeoJSON")
@@ -194,7 +195,7 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
     # create id's for new trees
     id_str = ""
     for i, column in enumerate(merge_attributes_list):
-        id_str += "_21" + added_trees[merge_attributes_list[i]].str.split(pat=":").str[1]
+        id_str += "_22" + added_trees[merge_attributes_list[i]].str.split(pat=":").str[1]
     added_trees['id'] = id_str
 
     #count number of added trees

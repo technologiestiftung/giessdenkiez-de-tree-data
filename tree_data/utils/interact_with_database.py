@@ -75,8 +75,10 @@ def read_old_tree_data(conn, database_dict):
 
     # create list with attribute names from the dataset
     attribute_list = old_trees.columns
-
-     # create a duplicated table for testing if replace parameter in config.yml ist set to False
+    print(old_trees.head())
+    print(attribute_list)
+    
+    # create a duplicated table for testing if replace parameter in config.yml ist set to False
     if database_dict['replace-table'] == False:
         table_name = 'trees_new'
         old_trees.to_postgis(table_name, conn, if_exists='replace')
@@ -122,7 +124,7 @@ def update_db(conn, result, update_attributes_list, table_name):
     set_str = set_str[:-2]
 
     # execute sql query for updating data
-    sql = 'UPDATE ' + table_name + ' SET ' + set_str + ' FROM tree_updates_tmp WHERE tree_updates_tmp.gmlid = ' + table_name + '.gmlid'
+    sql = 'UPDATE ' + table_name + ' SET ' + set_str + ' FROM tree_updates_tmp WHERE tree_updates_tmp.id = ' + table_name + '.id'
     rs = conn.execute(sql)
     sql =  'UPDATE ' + table_name + ' SET geom = ST_SetSRID(ST_MakePoint(lat::numeric, lng::numeric), 4326)'
     rs = conn.execute(sql)
