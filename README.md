@@ -68,6 +68,16 @@ To update database run
 python tree_data/main.py
 ```
 
+## Updating Caretaker labels
+
+In Gieß den Kiez it is visible which trees are maintained by Berlin's street and green space offices. However, this information is not included in the offical Berlin tree dataset. Instead, Berlin's green space offices provide separate Excel tables containing the trees they water. This information needs to be entered 'manually' into the database table "trees" using SQL commands. The procedure is as follows:
+
+1. Extract only the FIS-Broker-ID'S (gmlids) from the Excel sheet to a csv file
+2. Create a new table with this ID's in the database: `CREATE TABLE caretaker_ids(id VARCHAR NOT NULL)`
+3. Import ID’s from CSV-Table into the database table 
+4. Delete old caretaker labels from the trees table: `UPDATE trees SET caretaker = NULL`
+5. JOIN new caretaker labels to the trees: `UPDATE trees t SET caretaker = 'Bezirk XY' FROM caretaker_ids c WHERE t.gmlid = c.id`
+6. Delete the no longer needed table: `DROP TABLE caretaker_ids`
 
 ## Contributors ✨
 
