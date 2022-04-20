@@ -37,12 +37,12 @@ wfs_trees_parks = 'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_wfs_ba
 #'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_bparkplatz'
 # Specify the output Format of the WFS for fetching the data
 wfs_output_format = 'text/xml; subtype=gml/3.2.1'
-new_trees_streets_filename = "tree_data/data_files/s_wfs_baumbestand_mai21"
-new_trees_parks_filename = "tree_data/data_files/s_wfs_baumbestand_an_mai21"
+new_trees_streets_filename = "tree_data/data_files/s_wfs_baumbestand_apr22"
+new_trees_parks_filename = "tree_data/data_files/s_wfs_baumbestand_an_apr22"
 
 
 
-#get_wfs(wfs_trees_streets, wfs_output_format, new_trees_streets_filename)
+get_wfs(wfs_trees_streets, wfs_output_format, new_trees_streets_filename)
 #exit()
 get_wfs(wfs_trees_parks, wfs_output_format, new_trees_parks_filename)
 
