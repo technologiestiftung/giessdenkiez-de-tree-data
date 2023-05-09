@@ -83,7 +83,6 @@ def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
     # transformed_trees['standortnr'] = transformed_trees['standortnr_2'].astype(str)
     # transformed_trees = transformed_trees.drop(['standortnr_2'], axis=1)
 
-
     return transformed_trees
     
 
@@ -142,6 +141,10 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
 
     # delete unused attributes
     updated_trees = updated_trees[update_attributes_list + ['id']]
+
+    # convert pflanzjahr of new tree cadastree according to db table strucutre whre pflanzjahr is an integer
+    updated_trees['pflanzjahr'] = updated_trees['pflanzjahr'].astype(int)
+
    # print("----")
     #print(updated_trees.geom.dtype)
    # print("----")
