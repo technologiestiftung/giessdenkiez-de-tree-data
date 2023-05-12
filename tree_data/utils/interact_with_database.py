@@ -132,13 +132,12 @@ def update_db(conn, result, update_attributes_list, table_name):
     logger.info("🔄 Sucessfully updated columns " + str(update_attributes_list) + " in data table '" + table_name + "' for " + str(len(result)) + " rows.")
 
 
-def delete_from_db(conn, result, update_attributes_list, table_name):
+def delete_from_db(conn, result, table_name):
     """Takes the subset of deleted trees and deletes the respective rows in the dataset in the database.
 
     Args:
         conn (class 'sqlalchemy.engine.base.Engine'): The database engine object returned by start_db_connection().
         result (DataFrame): subset of tree data.
-        attribute_list (list): column names of old tree data table
         table_name (str): name of table in database that will be used
     """
 
@@ -164,18 +163,16 @@ def delete_from_db(conn, result, update_attributes_list, table_name):
     conn.execute(sql)
 
 
-def add_to_db(conn, result, update_attributes_list, table_name):
+def add_to_db(conn, result, table_name):
     """Takes the subset of added trees and adds the respective rows to the dataset in the database.
 
     Args:
         conn (class 'sqlalchemy.engine.base.Engine'): The database engine object returned by start_db_connection().
         result (DataFrame): subset of tree data.
-        attribute_list (list): column names of old tree data table
         table_name (str): name of table in database that will be used
     """
 
     # write added trees to a new table in database
-
     #result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
     result['geometry'] = gpd.points_from_xy(result.lat, result.lng)
     result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
@@ -203,3 +200,30 @@ def add_to_db(conn, result, update_attributes_list, table_name):
     # delete the temporary table
     sql = 'DROP TABLE added_trees_tmp'
     conn.execute(sql)
+
+def drop_dublicates(conn, table_name):
+    """Takes the subset of added trees and adds the respective rows to the dataset in the database.
+
+    Args:
+        conn (class 'sqlalchemy.engine.base.Engine'): The database engine object returned by start_db_connection().
+        table_name (str): name of table in database that will be used
+    """
+
+    #drop all rows that have share an identical gmlid with another row and keep just one of them
+    try:
+        with conn.begin() as transaction:
+            # drop duplicated trees
+            count = conn.execute(f"SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (partition BY gmlid ORDER BY id) AS rnum FROM {table_name}) t WHERE t.rnum > 1").scalar()
+            conn.execute(f"DELETE FROM {table_name} WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (partition BY gmlid ORDER BY id) AS rnum FROM {table_name}) t WHERE t.rnum > 1)")
+            
+            # drop watering records for deleted trees
+            conn.execute(f"DELETE FROM trees_watered WHERE tree_id NOT IN (SELECT id FROM {table_name})")
+
+            # drop adoption records for deleted trees
+            conn.execute(f"DELETE FROM trees_adopted WHERE tree_id NOT IN (SELECT id FROM {table_name})")
+
+        logger.info(f"⬆️  Successfully dropped {count} trees and corresponding watering and adoption records from the database table '{table_name}'.")
+    except Exception as e:
+        logger.info('❌  No trees found that share the same gmlid.')
+        logging.exception('Error occurred while deleting trees: {}'.format(e))
+
