@@ -13,7 +13,6 @@ from geoalchemy2 import Geometry, WKTElement
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
 def start_db_connection():
     """Loads database parameters from a .env-file and connects to the database.
 
@@ -83,12 +82,10 @@ def read_old_tree_data(conn, database_dict):
         table_name = 'trees_new'
         old_trees.to_postgis(table_name, conn, if_exists='replace')
         
-
     # keep only columns that are needed for comparing, merging or checking the data
     old_trees = old_trees[['id','kennzeich','standortnr','geom', 'standalter',
        'kronedurch', 'stammumfg', 'baumhoehe','gmlid']]
     old_trees['standortnr'] = old_trees['standortnr'].str.split('.').str[0]
-
 
     # count number of trees
     tree_count = len(old_trees.index)
@@ -125,12 +122,12 @@ def update_db(conn, result, update_attributes_list, table_name):
 
     # execute sql query for updating data
     sql = 'UPDATE ' + table_name + ' SET ' + set_str + ' FROM tree_updates_tmp WHERE tree_updates_tmp.id = ' + table_name + '.id'
-    rs = conn.execute(sql)
+    conn.execute(sql)
     sql =  'UPDATE ' + table_name + ' SET geom = ST_SetSRID(ST_MakePoint(lat::numeric, lng::numeric), 4326)'
-    rs = conn.execute(sql)
+    conn.execute(sql)
     # delete the temporary table
     sql_d = 'DROP TABLE tree_updates_tmp'
-    rs = conn.execute(sql_d)
+    conn.execute(sql_d)
 
     logger.info("🔄 Sucessfully updated columns " + str(update_attributes_list) + " in data table '" + table_name + "' for " + str(len(result)) + " rows.")
 
@@ -149,23 +146,22 @@ def delete_from_db(conn, result, update_attributes_list, table_name):
     result.to_sql('tree_deleted_tmp', conn, if_exists='replace', index=False)
     try:
         sql = "DELETE from trees_adopted WHERE tree_id IN " + str(tuple(result['id']))
-        rs = conn.execute(sql)
+        conn.execute(sql)
         sql = "DELETE from trees_watered WHERE tree_id IN " + str(tuple(result['id']))
-        rs = conn.execute(sql)
+        conn.execute(sql)
 
         # execute sql query for deleting data
         sql = "DELETE from " + table_name + " WHERE id IN " + str(tuple(result['id']))
-        rs = conn.execute(sql)
+        conn.execute(sql)
 
         logger.info("⬇️  Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
-    except:
+    except Exception as e:
         logger.info('❌  No trees to delete.')
+        logging.exception('Error occurred while adding trees to database: {}'.format(e))
 
     # delete the temporary table
     sql = 'DROP TABLE tree_deleted_tmp'
-    rs = conn.execute(sql)
-
-
+    conn.execute(sql)
 
 
 def add_to_db(conn, result, update_attributes_list, table_name):
@@ -187,9 +183,9 @@ def add_to_db(conn, result, update_attributes_list, table_name):
     try:
         # execute sql query for adding the data
         sql = "UPDATE added_trees_tmp SET geom = ST_SetSRID(geom,4326)"
-        
+
         # there is a problem with uppercase header names, so we have to bring all column names to "" here
-        rs = conn.execute(sql)
+        conn.execute(sql)
         cols = ''
         for c in result.columns:
             cols += '"%s", ' % c
@@ -200,10 +196,10 @@ def add_to_db(conn, result, update_attributes_list, table_name):
 
         logger.info("⬆️  Sucessfully added " + str(len(result)) + " new trees to the database table '" + table_name + "'.")
 
-    except:
+    except Exception as e:
         logger.info('❌  No trees to add.')
-
+        logging.exception('Error occurred while adding trees to database: {}'.format(e))
 
     # delete the temporary table
     sql = 'DROP TABLE added_trees_tmp'
-    rs = conn.execute(sql)
+    conn.execute(sql)
