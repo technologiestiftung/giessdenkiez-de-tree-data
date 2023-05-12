@@ -68,9 +68,11 @@ PG_DB=
 python tree_data/get_data_from_wfs.py
 ```
 
-2. Step: filename path in the conf.yml
+2. Step: set filename path and current year in the conf.yml
 
 ```yml
+year: 23
+
 new-data-paths:
   - data_files/s_wfs_baumbestand_YYYY-M-D.geojson
   - data_files/s_wfs_baumbestand_an_YYYY-M-D.geojson

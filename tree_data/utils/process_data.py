@@ -31,8 +31,9 @@ def read_config():
     merge_attributes_list = conf['data-schema']['merge-on']
     schema_mapping_dict = conf['data-schema']['mapping']
     database_dict = conf['database']
+    year = conf['year']
 
-    return new_trees_paths_list, schema_mapping_dict, update_attributes_list, merge_attributes_list, database_dict
+    return new_trees_paths_list, schema_mapping_dict, update_attributes_list, merge_attributes_list, database_dict, year
 
 def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
     """Takes the new tree data and extracts the data columns that are needed for comparision with old tree data. Does also change datatypes of some columns.
@@ -181,7 +182,7 @@ def find_deleted_trees(transformed_trees, old_trees, merge_attributes_list):
     return deleted_trees
 
 
-def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
+def find_added_trees(transformed_trees, old_trees, merge_attributes_list, year):
 
     # only keep needed columns from old trees
     old_trees = old_trees[['id']+ merge_attributes_list]
@@ -195,7 +196,7 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
     # create id's for new trees
     id_str = ""
     for i, column in enumerate(merge_attributes_list):
-        id_str += "_22" + added_trees[merge_attributes_list[i]].str.split(pat=":").str[1]
+        id_str += "_" + str(year) + added_trees[merge_attributes_list[i]].str.split(pat=":").str[1]
     added_trees['id'] = id_str
 
     #count number of added trees
@@ -219,7 +220,7 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
     return added_trees
 
 
-def compare_tree_data(transformed_trees, old_trees, update_attributes_list,  merge_attributes_list):
+def compare_tree_data(transformed_trees, old_trees, update_attributes_list,  merge_attributes_list, year):
     """Compare the old and the new tree data to find changes.
 
     Args:
@@ -237,7 +238,7 @@ def compare_tree_data(transformed_trees, old_trees, update_attributes_list,  mer
 
     deleted_trees = find_deleted_trees(transformed_trees, old_trees, merge_attributes_list)
 
-    added_trees = find_added_trees(transformed_trees, old_trees, merge_attributes_list)
+    added_trees = find_added_trees(transformed_trees, old_trees, merge_attributes_list, year)
 
     updated_trees = find_updated_trees(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
  
