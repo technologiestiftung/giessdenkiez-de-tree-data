@@ -22,8 +22,8 @@ database:
   replace-table: True
 
 new-data-paths:
-  - tree_data/data_files/s_wfs_baumbestand.gml
-  - tree_data/data_files/s_wfs_baumbestand_an.gml
+  - tree_data/data_files/s_wfs_baumbestand.geojson
+  - tree_data/data_files/s_wfs_baumbestand_an.geojson
 
 data-schema:
   mapping:
@@ -62,13 +62,21 @@ PG_DB=
 
 ## Example Usage
 
-To save newest tree data from the FIS-Broker locally run
+1. Step: save newest tree data from the FIS-Broker locally run
 
 ```bash
 python tree_data/get_data_from_wfs.py
 ```
 
-To update database run
+2. Step: filename path in the conf.yml
+
+```yml
+new-data-paths:
+  - data_files/s_wfs_baumbestand_YYYY-M-D.geojson
+  - data_files/s_wfs_baumbestand_an_YYYY-M-D.geojson
+```
+
+1. Step: execute the main script to update the database
 
 ```bash
 python tree_data/main.py
