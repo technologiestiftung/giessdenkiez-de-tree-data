@@ -4,9 +4,12 @@ database:
   data-table-name: trees
   replace-table: True
 
+# will be added to the "id" of each tree
+year: 23
+
 new-data-paths:
-  - tree_data/data_files/s_wfs_baumbestand_apr22.geojson
-  - tree_data/data_files/s_wfs_baumbestand_an_apr22.geojson
+  - data_files/s_wfs_baumbestand_2023-5-4.geojson
+  - data_files/s_wfs_baumbestand_an_2023-5-4.geojson
 
 data-schema:
   mapping:
