@@ -18,12 +18,13 @@ def read_config():
         database_dict (dictionary): includes path to databse parameters, name of old data table and configuration for replacing old table
     """
 
-    with open("tree_data/conf.yml", 'r') as stream:
+    with open("conf.yml", 'r') as stream:
         try:
             conf = yaml.safe_load(stream)
-        except yaml.YAMLError as exc:
-            logger.error("❌Something is wrong with the config.yaml file.")
-            raise 
+        except yaml.YAMLError as e:
+            logger.info("❌Something is wrong with the config.yaml file.")
+            logging.exception('Error occurred while reading the conf.yml: {}'.format(e)) 
+            raise
 
     new_trees_paths_list = conf['new-data-paths']
     update_attributes_list = conf['data-schema']['update']
@@ -126,29 +127,26 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
         raise Exception(msg)
     
     # Calculate some statistics about the updated attributes
-    print(updated_trees.columns)
     try:
         logger.info('📶 Some statistics about difference between old and new values of attributes: ')
         for attribute in update_attributes_list:
             mean = (pd.to_numeric(updated_trees[attribute].replace("undefined", "", regex=True))-pd.to_numeric(updated_trees[attribute+'_x'].replace("undefined", "", regex=True))).describe()
             logger.info(attribute + ': mean = ' + str(mean[1]) + ', max = ' + str(mean[7]) + ', min = ' + str(mean[3]))
     except:
-        logger.info('❌  No statistics about updated values available.')
+        logger.info('❌  No more statistics about updated values available.')
         
     # save subset of updated tree data as geojson file
     updated_trees = updated_trees.drop(['geometry'],axis=1)
-    updated_trees.to_file("tree_data/data_files/updated_trees_tmp.json", driver="GeoJSON")
+    # replace all non-numeric values with NaN and then convert the column to type int after filling in NaN values with 0
+    updated_trees['pflanzjahr'] = pd.to_numeric(updated_trees['pflanzjahr'], errors='coerce').fillna(0).astype(int)
+    # integer out of range -> replace integer values greater than 9999 with 0
+    updated_trees.loc[updated_trees['pflanzjahr'] > 9999, 'pflanzjahr'] = 0
+
+    updated_trees.to_file("data_files/updated_trees_tmp.json", driver="GeoJSON")
 
     # delete unused attributes
     updated_trees = updated_trees[update_attributes_list + ['id']]
 
-    # convert pflanzjahr of new tree cadastree according to db table strucutre whre pflanzjahr is an integer
-    updated_trees['pflanzjahr'] = updated_trees['pflanzjahr'].astype(int)
-
-   # print("----")
-    #print(updated_trees.geom.dtype)
-   # print("----")
-    #exit()
     return updated_trees
 
 
@@ -170,13 +168,12 @@ def find_deleted_trees(transformed_trees, old_trees, merge_attributes_list):
 
         deleted_trees = deleted_trees.drop(['geometry'],axis=1)
         # save subset of deleted tree data as geojson file
-        deleted_trees.to_file("tree_data/data_files/deleted_tmp.json",driver="GeoJSON")
+        deleted_trees.to_file("data_files/deleted_tmp.json",driver="GeoJSON")
 
     # stop script if no deleted trees were found
     else:
         msg = f"🌲 No deleted trees were found."
         logger.error(msg)
-
 
     # delete unused attributes
     deleted_trees = deleted_trees[['id']]
@@ -207,13 +204,17 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list):
         logger.info("🌲 Matched tree datasets: " + str(tree_count) + " trees were found that do not exist in the old BUT IN in the new dataset.") 
 
         # save subset of added tree data as geojson file
-        added_trees.to_file("tree_data/data_files/added_tmp.json", driver="GeoJSON")
+        added_trees.to_file("data_files/added_tmp.json", driver="GeoJSON")
         
     # stop script if no addedtrees were found
     else:
         msg = f"🌳  No added trees were found."
         logger.error(msg)
 
+    # replace all non-numeric values with NaN and then convert the column to type int after filling in NaN values with 0
+    added_trees['pflanzjahr'] = pd.to_numeric(added_trees['pflanzjahr'], errors='coerce').fillna(0).astype(int)
+    # integer out of range  -> replace integer values greater than 9999 with 0
+    added_trees.loc[added_trees['pflanzjahr'] > 9999, 'pflanzjahr'] = 0
 
     return added_trees
 
@@ -241,4 +242,3 @@ def compare_tree_data(transformed_trees, old_trees, update_attributes_list,  mer
     updated_trees = find_updated_trees(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
  
     return updated_trees, deleted_trees, added_trees
-    #return updated_trees
