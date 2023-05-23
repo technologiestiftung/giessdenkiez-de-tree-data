@@ -67,6 +67,11 @@ def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
             if column not in attribute_list:
                 transformed_trees = transformed_trees.drop([column], axis = 1)
 
+    duplicates_count = len(transformed_trees) - len(transformed_trees.drop_duplicates(subset=['gmlid']))
+
+    # drop duplicate features based on gmlid
+    transformed_trees = transformed_trees.drop_duplicates(subset=['gmlid'])
+
     # replace NA values with 'undefined' and transform dataformats to string
     for column in transformed_trees.columns:
         if column != "geometry":
@@ -84,6 +89,8 @@ def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
     # transformed_trees['kennzeich'] = transformed_trees['standortnr'].astype(str)
     # transformed_trees['standortnr'] = transformed_trees['standortnr_2'].astype(str)
     # transformed_trees = transformed_trees.drop(['standortnr_2'], axis=1)
+
+    logger.info("ℹ️" + str(duplicates_count) + " trees with a duplicated gmlid were dropped.")
 
     return transformed_trees
     
