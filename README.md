@@ -22,8 +22,8 @@ database:
   replace-table: True
 
 new-data-paths:
-  - tree_data/data_files/s_wfs_baumbestand.gml
-  - tree_data/data_files/s_wfs_baumbestand_an.gml
+  - tree_data/data_files/s_wfs_baumbestand.geojson
+  - tree_data/data_files/s_wfs_baumbestand_an.geojson
 
 data-schema:
   mapping:
@@ -62,13 +62,25 @@ PG_DB=
 
 ## Example Usage
 
-To save newest tree data from the FIS-Broker locally run
+1. Step: Download newest tree data from the FIS-Broker. Locally run:
 
 ```bash
 python tree_data/get_data_from_wfs.py
 ```
 
-To update database run
+2. Step: Set filename path and current year in the `conf.yml`
+
+```yml
+year: 23
+
+new-data-paths:
+  - data_files/s_wfs_baumbestand_YYYY-MM-DD.geojson
+  - data_files/s_wfs_baumbestand_an_YYYY-MM-DD.geojson
+```
+
+3. Setp: Configure you `.env` file and provide the credentials of your production database
+
+4. Step: Execute `main.py` to connect to your production database and finally update the database:
 
 ```bash
 python tree_data/main.py

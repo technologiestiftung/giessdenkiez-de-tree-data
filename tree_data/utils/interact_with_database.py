@@ -13,7 +13,6 @@ from geoalchemy2 import Geometry, WKTElement
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-
 def start_db_connection():
     """Loads database parameters from a .env-file and connects to the database.
 
@@ -43,6 +42,10 @@ def start_db_connection():
     # connect to the database
     conn = create_engine(conn_string)
     try:
+        # Increase the statement timeout to 30 seconds
+        conn.execute("SET statement_timeout TO 30000")
+        logger.info("⏰ Statement timeout increased to 30 seconds")
+
         conn.connect()
         logger.info("🗄  Database connection established")
 
@@ -83,12 +86,10 @@ def read_old_tree_data(conn, database_dict):
         table_name = 'trees_new'
         old_trees.to_postgis(table_name, conn, if_exists='replace')
         
-
     # keep only columns that are needed for comparing, merging or checking the data
     old_trees = old_trees[['id','kennzeich','standortnr','geom', 'standalter',
        'kronedurch', 'stammumfg', 'baumhoehe','gmlid']]
     old_trees['standortnr'] = old_trees['standortnr'].str.split('.').str[0]
-
 
     # count number of trees
     tree_count = len(old_trees.index)
@@ -125,61 +126,65 @@ def update_db(conn, result, update_attributes_list, table_name):
 
     # execute sql query for updating data
     sql = 'UPDATE ' + table_name + ' SET ' + set_str + ' FROM tree_updates_tmp WHERE tree_updates_tmp.id = ' + table_name + '.id'
-    rs = conn.execute(sql)
+    conn.execute(sql)
     sql =  'UPDATE ' + table_name + ' SET geom = ST_SetSRID(ST_MakePoint(lat::numeric, lng::numeric), 4326)'
-    rs = conn.execute(sql)
+    conn.execute(sql)
     # delete the temporary table
     sql_d = 'DROP TABLE tree_updates_tmp'
-    rs = conn.execute(sql_d)
+    conn.execute(sql_d)
 
     logger.info("🔄 Sucessfully updated columns " + str(update_attributes_list) + " in data table '" + table_name + "' for " + str(len(result)) + " rows.")
 
 
-def delete_from_db(conn, result, update_attributes_list, table_name):
+def delete_from_db(conn, result, table_name):
     """Takes the subset of deleted trees and deletes the respective rows in the dataset in the database.
 
     Args:
         conn (class 'sqlalchemy.engine.base.Engine'): The database engine object returned by start_db_connection().
         result (DataFrame): subset of tree data.
-        attribute_list (list): column names of old tree data table
         table_name (str): name of table in database that will be used
     """
 
     # write deleted trees to a new table in database
     result.to_sql('tree_deleted_tmp', conn, if_exists='replace', index=False)
     try:
-        sql = "DELETE from trees_adopted WHERE tree_id IN " + str(tuple(result['id']))
-        rs = conn.execute(sql)
-        sql = "DELETE from trees_watered WHERE tree_id IN " + str(tuple(result['id']))
-        rs = conn.execute(sql)
+        for i, (_, row) in enumerate(result.iterrows(), 1):
+            # Delete row from trees_adopted table
+            sql = "DELETE FROM trees_adopted WHERE tree_id = '{}'".format(row['id'])
+            conn.execute(sql)
 
-        # execute sql query for deleting data
-        sql = "DELETE from " + table_name + " WHERE id IN " + str(tuple(result['id']))
-        rs = conn.execute(sql)
+            # Delete row from trees_watered table
+            sql = "DELETE FROM trees_watered WHERE tree_id = '{}'".format(row['id'])
+            conn.execute(sql)
+
+            # Delete row from the specified table
+            sql = "DELETE FROM {} WHERE id = '{}'".format(table_name, row['id'])
+            conn.execute(sql)
+
+            # Log progress after every 1,000 trees
+            if i % 1000 == 0:
+                logger.info("⬇️  Deleted {} trees".format(i))        
 
         logger.info("⬇️  Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
-    except:
+    except Exception as e:
         logger.info('❌  No trees to delete.')
+        logging.exception('Error occurred while adding trees to database: {}'.format(e))
 
     # delete the temporary table
     sql = 'DROP TABLE tree_deleted_tmp'
-    rs = conn.execute(sql)
+    conn.execute(sql)
 
 
-
-
-def add_to_db(conn, result, update_attributes_list, table_name):
+def add_to_db(conn, result, table_name):
     """Takes the subset of added trees and adds the respective rows to the dataset in the database.
 
     Args:
         conn (class 'sqlalchemy.engine.base.Engine'): The database engine object returned by start_db_connection().
         result (DataFrame): subset of tree data.
-        attribute_list (list): column names of old tree data table
         table_name (str): name of table in database that will be used
     """
 
     # write added trees to a new table in database
-
     #result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
     result['geometry'] = gpd.points_from_xy(result.lat, result.lng)
     result = result.rename(columns={'geometry':'geom'}).set_geometry('geom')
@@ -187,9 +192,9 @@ def add_to_db(conn, result, update_attributes_list, table_name):
     try:
         # execute sql query for adding the data
         sql = "UPDATE added_trees_tmp SET geom = ST_SetSRID(geom,4326)"
-        
+
         # there is a problem with uppercase header names, so we have to bring all column names to "" here
-        rs = conn.execute(sql)
+        conn.execute(sql)
         cols = ''
         for c in result.columns:
             cols += '"%s", ' % c
@@ -200,10 +205,37 @@ def add_to_db(conn, result, update_attributes_list, table_name):
 
         logger.info("⬆️  Sucessfully added " + str(len(result)) + " new trees to the database table '" + table_name + "'.")
 
-    except:
+    except Exception as e:
         logger.info('❌  No trees to add.')
-
+        logging.exception('Error occurred while adding trees to database: {}'.format(e))
 
     # delete the temporary table
     sql = 'DROP TABLE added_trees_tmp'
-    rs = conn.execute(sql)
+    conn.execute(sql)
+
+def drop_dublicates(conn, table_name):
+    """Takes the subset of added trees and adds the respective rows to the dataset in the database.
+
+    Args:
+        conn (class 'sqlalchemy.engine.base.Engine'): The database engine object returned by start_db_connection().
+        table_name (str): name of table in database that will be used
+    """
+
+    #drop all rows that have share an identical gmlid with another row and keep just one of them
+    try:
+        with conn.begin() as transaction:
+            # drop duplicated trees
+            count = conn.execute(f"SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (partition BY gmlid ORDER BY id) AS rnum FROM {table_name}) t WHERE t.rnum > 1").scalar()
+            conn.execute(f"DELETE FROM {table_name} WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (partition BY gmlid ORDER BY id) AS rnum FROM {table_name}) t WHERE t.rnum > 1)")
+            
+            # drop watering records for deleted trees
+            conn.execute(f"DELETE FROM trees_watered WHERE tree_id NOT IN (SELECT id FROM {table_name})")
+
+            # drop adoption records for deleted trees
+            conn.execute(f"DELETE FROM trees_adopted WHERE tree_id NOT IN (SELECT id FROM {table_name})")
+
+        logger.info(f"⬆️  Successfully dropped {count} trees and corresponding watering and adoption records from the database table '{table_name}'.")
+    except Exception as e:
+        logger.info('❌  No trees found that share the same gmlid.')
+        logging.exception('Error occurred while deleting trees: {}'.format(e))
+
