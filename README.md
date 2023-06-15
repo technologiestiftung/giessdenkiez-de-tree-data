@@ -62,23 +62,25 @@ PG_DB=
 
 ## Example Usage
 
-1. Step: save newest tree data from the FIS-Broker locally run
+1. Step: Download newest tree data from the FIS-Broker. Locally run:
 
 ```bash
 python tree_data/get_data_from_wfs.py
 ```
 
-2. Step: set filename path and current year in the conf.yml
+2. Step: Set filename path and current year in the `conf.yml`
 
 ```yml
 year: 23
 
 new-data-paths:
-  - data_files/s_wfs_baumbestand_YYYY-M-D.geojson
-  - data_files/s_wfs_baumbestand_an_YYYY-M-D.geojson
+  - data_files/s_wfs_baumbestand_YYYY-MM-DD.geojson
+  - data_files/s_wfs_baumbestand_an_YYYY-MM-DD.geojson
 ```
 
-1. Step: execute the main script to update the database
+3. Setp: Configure you `.env` file and provide the credentials of your production database
+
+4. Step: Execute `main.py` to connect to your production database and finally update the database:
 
 ```bash
 python tree_data/main.py
