@@ -42,6 +42,10 @@ def start_db_connection():
     # connect to the database
     conn = create_engine(conn_string)
     try:
+        # Increase the statement timeout to 30 seconds
+        conn.execute("SET statement_timeout TO 30000")
+        logger.info("⏰ Statement timeout increased to 30 seconds")
+
         conn.connect()
         logger.info("🗄  Database connection established")
 
@@ -144,14 +148,22 @@ def delete_from_db(conn, result, table_name):
     # write deleted trees to a new table in database
     result.to_sql('tree_deleted_tmp', conn, if_exists='replace', index=False)
     try:
-        sql = "DELETE from trees_adopted WHERE tree_id IN " + str(tuple(result['id']))
-        conn.execute(sql)
-        sql = "DELETE from trees_watered WHERE tree_id IN " + str(tuple(result['id']))
-        conn.execute(sql)
+        for i, (_, row) in enumerate(result.iterrows(), 1):
+            # Delete row from trees_adopted table
+            sql = "DELETE FROM trees_adopted WHERE tree_id = '{}'".format(row['id'])
+            conn.execute(sql)
 
-        # execute sql query for deleting data
-        sql = "DELETE from " + table_name + " WHERE id IN " + str(tuple(result['id']))
-        conn.execute(sql)
+            # Delete row from trees_watered table
+            sql = "DELETE FROM trees_watered WHERE tree_id = '{}'".format(row['id'])
+            conn.execute(sql)
+
+            # Delete row from the specified table
+            sql = "DELETE FROM {} WHERE id = '{}'".format(table_name, row['id'])
+            conn.execute(sql)
+
+            # Log progress after every 1,000 trees
+            if i % 1000 == 0:
+                logger.info("⬇️  Deleted {} trees".format(i))        
 
         logger.info("⬇️  Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
     except Exception as e:
