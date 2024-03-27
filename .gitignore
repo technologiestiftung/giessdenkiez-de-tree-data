@@ -119,4 +119,7 @@ dmypy.json
 
 *.drawio
 
-myvenv/
+myvenv/node_modules
+
+node_modules
+tree_data/data_files/*json

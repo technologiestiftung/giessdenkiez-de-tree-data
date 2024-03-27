@@ -1,0 +1,18 @@
+{
+	"name": "@technologiestiftung/giessdenkiez-de-tree-data",
+	"version": "0.1.0",
+	"type": "module",
+	"description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
+	"main": "prettier.config.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 0"
+	},
+	"keywords": [],
+	"author": "ff6347 <hash@ff6347.email>",
+	"license": "MIT",
+	"devDependencies": {
+		"@technologiestiftung/prettier-config": "1.0.0",
+		"@technologiestiftung/semantic-release-config": "1.2.4",
+		"semantic-release": "23.0.6"
+	}
+}
