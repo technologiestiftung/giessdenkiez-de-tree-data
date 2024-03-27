@@ -72,9 +72,9 @@ database:
   data-table-name: trees
   replace-table: True
 
-new-data-paths:
-  - tree_data/data_files/s_wfs_baumbestand-YYYY-M-DD.geojson
-  - tree_data/data_files/s_wfs_baumbestand_an-YYYY-M-DD.geojson
+new-data-files:
+  - s_wfs_baumbestand-YYYY-M-DD.geojson
+  - s_wfs_baumbestand_an-YYYY-M-DD.geojson
 
 data-schema:
   mapping:
@@ -119,14 +119,14 @@ PG_DB=
 python tree_data/get_data_from_wfs.py
 ```
 
-2. Step: Set filename path and current year in the `conf.yml`
+2. Step: Set filename and current year in the `conf.yml`
 
 ```yml
 year: 23
 
-new-data-paths:
-  - data_files/s_wfs_baumbestand_YYYY-MM-DD.geojson
-  - data_files/s_wfs_baumbestand_an_YYYY-MM-DD.geojson
+new-data-files:
+  - s_wfs_baumbestand_YYYY-MM-DD.geojson
+  - s_wfs_baumbestand_an_YYYY-MM-DD.geojson
 ```
 
 3. Setp: Configure you `.env` file and provide the credentials of your production database
