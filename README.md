@@ -10,6 +10,19 @@ We use these Python scripts to automate this. Using the script `get_data_from_wf
 
 ![tree_data_schema](https://user-images.githubusercontent.com/61182572/124777121-44cb3080-df40-11eb-9e49-4cccad77b821.png)
 
+## Requirements
+
+- Python > 3.8
+- GDAL (as a dependency for geopandas)
+
+To make sure we have a consistent environment, we created a docker image with all dependencies installed. To build the image, run:
+
+```bash
+docker build -t your-org/giessdenkiez-de-tree-data .
+```
+
+For convinence see the [Makefile](./Makefile) for more commands.
+
 ## Inputs
 
 - New tree data in GML or GeoJSON format
@@ -22,8 +35,8 @@ database:
   replace-table: True
 
 new-data-paths:
-  - tree_data/data_files/s_wfs_baumbestand.geojson
-  - tree_data/data_files/s_wfs_baumbestand_an.geojson
+  - tree_data/data_files/s_wfs_baumbestand-YYYY-M-DD.geojson
+  - tree_data/data_files/s_wfs_baumbestand_an-YYYY-M-DD.geojson
 
 data-schema:
   mapping:
