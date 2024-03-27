@@ -5,11 +5,11 @@ database:
   replace-table: True
 
 # will be added to the "id" of each tree
-year: 23
+year: 24
 
-new-data-paths:
-  - data_files/s_wfs_baumbestand_2023-5-4.geojson
-  - data_files/s_wfs_baumbestand_an_2023-5-4.geojson
+new-data-files:
+  - s_wfs_baumbestand_2024-3-27.geojson
+  - s_wfs_baumbestand_an_2024-3-27.geojson
 
 data-schema:
   mapping:
@@ -33,5 +33,3 @@ data-schema:
     - gattungdeutsch
     - gattung
     - pflanzjahr
-
-

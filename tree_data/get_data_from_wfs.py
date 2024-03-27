@@ -18,7 +18,7 @@ def get_wfs(wfs_url, wfs_output_format, outfile_name):
     layer = list(wfs.contents)[-1]
     params = dict(service='WFS', version="1.0.0", request='GetFeature',
         typeName=layer, outputFormat=wfs_output_format)
-    
+
     # Parse the URL with parameters
     q = Request('GET', wfs_url, params=params).prepare().url
     print('Request WFS from ' + q)
@@ -40,7 +40,3 @@ new_trees_parks_filename = "tree_data/data_files/s_wfs_baumbestand_an_" + str(cu
 
 get_wfs(wfs_trees_streets, wfs_output_format, new_trees_streets_filename)
 get_wfs(wfs_trees_parks, wfs_output_format, new_trees_parks_filename)
-
-
-
-

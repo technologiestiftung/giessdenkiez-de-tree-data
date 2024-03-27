@@ -4,6 +4,7 @@ from requests import Request
 import warnings
 import pandas as pd
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -18,12 +19,14 @@ def read_new_tree_data(new_trees_filenames):
         GeoDataFrame: Every file is written to a single dataframe
     """
 
-    with warnings.catch_warnings(): 
+    with warnings.catch_warnings():
         warnings.simplefilter('ignore') # gpd.read_file shows a warning due to a problem with the fiona package in the current version. this can be ignored for now.
         new_trees = gpd.GeoDataFrame()
         # load the tree data file by file and concatinate
+        base_dir = os.getenv("PROJECT_ROOT", "./")
         for file in new_trees_filenames:
-            tmp = gpd.read_file(file)
+            file_path =	 os.path.join(base_dir, "tree_data/data_files", file)
+            tmp = gpd.read_file(file_path)
             new_trees = pd.concat([new_trees,tmp], ignore_index=True)
 
         # count number of trees
@@ -41,4 +44,3 @@ def read_new_tree_data(new_trees_filenames):
 
     # new_trees_streets['type'] = 'strasse'
     # new_trees_parks['type'] = 'anlage'
-

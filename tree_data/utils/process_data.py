@@ -3,6 +3,7 @@ import pandas as pd
 import logging
 import numpy as np
 import yaml
+import os
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -17,16 +18,17 @@ def read_config():
         merge_attribute_list (list): attributes that should be used for merging old and new data tables
         database_dict (dictionary): includes path to databse parameters, name of old data table and configuration for replacing old table
     """
-
-    with open("conf.yml", 'r') as stream:
+    base_dir = os.getenv("PROJECT_ROOT", "./")
+    conf_path = os.path.join(base_dir, "tree_data/conf.yml")
+    with open(conf_path, 'r') as stream:
         try:
             conf = yaml.safe_load(stream)
         except yaml.YAMLError as e:
             logger.info("❌Something is wrong with the config.yaml file.")
-            logging.exception('Error occurred while reading the conf.yml: {}'.format(e)) 
+            logging.exception('Error occurred while reading the conf.yml: {}'.format(e))
             raise
 
-    new_trees_paths_list = conf['new-data-paths']
+    new_trees_paths_list = conf['new-data-files']
     update_attributes_list = conf['data-schema']['update']
     merge_attributes_list = conf['data-schema']['merge-on']
     schema_mapping_dict = conf['data-schema']['mapping']
@@ -44,7 +46,7 @@ def transform_new_tree_data(new_trees, attribute_list, schema_mapping_dict):
     Returns:
         transformed_trees (DataFrame): Extracted tree data.
     """
-    
+
     # if keeping the geometry column, transform data to the crs of our old tree dataset
     new_trees['geometry'] = new_trees['geometry'].set_crs("EPSG:25833", allow_override=True)
     new_trees['geometry'] = new_trees['geometry'].to_crs("EPSG:4326")
@@ -101,7 +103,7 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
         msg = f"❌  No matching trees in old and new dataset were found. Something went wrong."
         logger.error(msg)
         raise Exception(msg)
-    
+
     # Calculate some statistics about the updated attributes
     try:
         logger.info('📶 Some statistics about difference between old and new values of attributes: ')
@@ -110,15 +112,16 @@ def find_updated_trees(transformed_trees, old_trees, update_attributes_list,  me
             logger.info(attribute + ': mean = ' + str(mean[1]) + ', max = ' + str(mean[7]) + ', min = ' + str(mean[3]))
     except:
         logger.info('❌  No more statistics about updated values available.')
-        
+
     # save subset of updated tree data as geojson file
     updated_trees = updated_trees.drop(['geometry'],axis=1)
     # replace all non-numeric values with NaN and then convert the column to type int after filling in NaN values with 0
     updated_trees['pflanzjahr'] = pd.to_numeric(updated_trees['pflanzjahr'], errors='coerce').fillna(0).astype(int)
     # integer out of range -> replace integer values greater than 9999 with 0
     updated_trees.loc[updated_trees['pflanzjahr'] > 9999, 'pflanzjahr'] = 0
-
-    updated_trees.to_file("data_files/updated_trees_tmp.json", driver="GeoJSON")
+    base_dir = os.getenv("PROJECT_ROOT", "./")
+    updated_trees_file_path = os.path.join(base_dir, "tree_data/data_files/updated_trees_tmp.json")
+    updated_trees.to_file(updated_trees_file_path, driver="GeoJSON")
 
     # delete unused attributes
     updated_trees = updated_trees[update_attributes_list + ['id']]
@@ -142,7 +145,9 @@ def find_deleted_trees(transformed_trees, old_trees, merge_attributes_list):
 
         deleted_trees = deleted_trees.drop(['geometry'],axis=1)
         # save subset of deleted tree data as geojson file
-        deleted_trees.to_file("data_files/deleted_tmp.json",driver="GeoJSON")
+        base_dir = os.getenv("PROJECT_ROOT", "./")
+        deleted_trees_file_path = os.path.join(base_dir,"tree_data", "data_files/deleted_tmp.json")
+        deleted_trees.to_file(deleted_trees_file_path,driver="GeoJSON")
 
     # stop script if no deleted trees were found
     else:
@@ -159,7 +164,7 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list, year):
 
     # only keep needed columns from old trees
     old_trees = old_trees[['id']+ merge_attributes_list]
-    
+
     # find all trees that which does not exist in the old BUT IN the new dataset
     added_trees = old_trees.merge(transformed_trees, on = merge_attributes_list, how='right')
 
@@ -175,11 +180,13 @@ def find_added_trees(transformed_trees, old_trees, merge_attributes_list, year):
     #count number of added trees
     tree_count = len(added_trees.index)
     if tree_count > 0:
-        logger.info("🌲 Matched tree datasets: " + str(tree_count) + " trees were found that do not exist in the old BUT IN in the new dataset.") 
+        logger.info("🌲 Matched tree datasets: " + str(tree_count) + " trees were found that do not exist in the old BUT IN in the new dataset.")
 
         # save subset of added tree data as geojson file
-        added_trees.to_file("data_files/added_tmp.json", driver="GeoJSON")
-        
+        base_dir = os.getenv("PROJECT_ROOT", "./")
+        added_trees_file_path = os.path.join(base_dir, "tree_data", "data_files/added_tmp.json")
+        added_trees.to_file(added_trees_file_path, driver="GeoJSON")
+
     # stop script if no addedtrees were found
     else:
         msg = f"🌳  No added trees were found."
@@ -212,5 +219,5 @@ def compare_tree_data(transformed_trees, old_trees, update_attributes_list,  mer
     deleted_trees = find_deleted_trees(transformed_trees, old_trees, merge_attributes_list)
     added_trees = find_added_trees(transformed_trees, old_trees, merge_attributes_list, year)
     updated_trees = find_updated_trees(transformed_trees, old_trees, update_attributes_list, merge_attributes_list)
- 
+
     return updated_trees, deleted_trees, added_trees
