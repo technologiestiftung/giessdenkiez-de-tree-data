@@ -14,14 +14,52 @@ We use these Python scripts to automate this. Using the script `get_data_from_wf
 
 - Python > 3.8
 - GDAL (as a dependency for geopandas)
+- Docker
 
-To make sure we have a consistent environment, we created a docker image with all dependencies installed. To build the image, run:
+To make sure we have a consistent environment, we created a docker image with all dependencies installed. We do not recommend running this on your host machine. To build the image, run:
 
 ```bash
-docker build -t your-org/giessdenkiez-de-tree-data .
+docker build -t technologiestiftung/giessdenkiez-de-tree-data .
+```
+
+This image will create a container where you can run an interactive shell session. It will not run any scripts. First copy or rename the `tree_data/sample.env` to `tree_data/.env` and populate it with the right variables. Then run the container in detached mode:
+
+```bash
+docker run --name gdk-python-runner --detach \
+		--env-file $(pwd)/tree_data/.env \
+		--volume "$(pwd)/tree_data:/usr/app/tree_data" \
+		technologiestiftung/giessdenkiez-de-tree-data
+```
+
+The above command will create a container named `gdk-python-runner` with the environment variables from the `.env` file and the `tree_data` directory mounted inside the container. Any change you make to the `tree_data` directory will be reflected inside the container.
+
+Then you can run the scripts inside the container:
+
+```bash
+docker exec -it gdk-python-runner /bin/bash
+cd /usr/app/
+# download the data
+python tree_data/get_data_from_wfs.py
+# update the database
+# make sure to update the tree_data/conf.yml file with the correct filenames
+python tree_data/main.py
+
 ```
 
 For convinence see the [Makefile](./Makefile) for more commands.
+
+Currently
+
+```bash
+# build the image
+make build
+# run the container
+make run
+# run ineractive tty session
+make shell
+# remove the container
+make clean
+```
 
 ## Inputs
 

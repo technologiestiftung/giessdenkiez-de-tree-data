@@ -14,9 +14,10 @@ RUN apt-get update && apt-get install -y \
 	&& rm -rf /var/lib/apt/lists/*
 RUN pip install --upgrade pip setuptools wheel
 WORKDIR /usr/app
+# PROJECT_ROOT is used by the python scripts
+ENV PROJECT_ROOT /usr/app
 ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
-ENV PROJECT_ROOT /usr/app
 COPY ./requirements.txt requirements.txt
 RUN pip install -v -r requirements.txt
 COPY . .
