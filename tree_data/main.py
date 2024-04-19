@@ -1,7 +1,7 @@
 import logging
 import time
 from utils.get_new_data import read_new_tree_data
-from utils.interact_with_database import start_db_connection, read_old_tree_data, update_db, delete_from_db, add_to_db, drop_dublicates
+from utils.interact_with_database import start_db_connection, read_old_tree_data_with_limit_and_offset, read_old_tree_data, update_db, delete_from_db, add_to_db, drop_dublicates
 from utils.process_data import read_config, transform_new_tree_data, compare_tree_data
 
 # logger configuration
@@ -9,7 +9,7 @@ logger = logging.getLogger('root')
 # FORMAT = "[%(asctime) %(name) %(levelname) - %(funcName)20s() ] %(message)s"
 FORMAT = "[%(levelname)s %(name)s] %(message)s"
 logging.basicConfig(format=FORMAT)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # Start timer
 start = time.time()
@@ -20,7 +20,7 @@ new_trees_paths_list, schema_mapping_dict, update_attributes_list, merge_attribu
 # Connect to the database. Database parameters are set in the .env
 conn = start_db_connection()
 # Import the current tree data from database. Name of the table is set in config.yaml
-old_trees, attribute_list, table_name = read_old_tree_data(conn, database_dict)
+old_trees, attribute_list, table_name = read_old_tree_data_with_limit_and_offset(conn, database_dict)
 
 # Import raw tree data as dataframe from files. Filenames are set in config.yaml
 new_trees = read_new_tree_data(new_trees_paths_list)
