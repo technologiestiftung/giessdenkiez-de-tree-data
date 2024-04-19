@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/compare/v1.0.0...v1.0.1) (2024-04-19)
+
+
+### Bug Fixes
+
+* **env:** Rename env vars to match PG pattern ([534f56b](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/534f56b007d6664cd982038493160fd0d7db2074))
+
 # 1.0.0 (2024-03-27)
 
 
