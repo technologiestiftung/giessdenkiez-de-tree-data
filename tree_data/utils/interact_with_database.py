@@ -26,18 +26,18 @@ def start_db_connection():
     # load database parameters from .env
     load_dotenv()
     # check if all required environmental variables are accessible
-    for env_var in ["PG_DB", "PG_PORT", "PG_USER", "PG_PASS", "PG_DB"]:
+    for env_var in ["PGDATABASE", "PGPORT", "PGUSER", "PGPASSWORD", "PGHOST"]:
         if env_var not in os.environ:
             logger.error("❌Environmental Variable {} does not exist".format(env_var))
     # declare variables for database parameters
-    pg_server = os.getenv("PG_SERVER")
-    pg_port = os.getenv("PG_PORT")
-    pg_username = os.getenv("PG_USER")
-    pg_password = os.getenv("PG_PASS")
-    pg_database = os.getenv("PG_DB")
+    pg_host = os.getenv("PGHOST")
+    pg_port = os.getenv("PGPORT")
+    pg_user = os.getenv("PGUSER")
+    pg_password = os.getenv("PGPASSWORD")
+    pg_database = os.getenv("PGDATABASE")
 
     # create databse connection url from variables
-    conn_string ="postgresql://"+pg_username+":"+pg_password+"@"+pg_server+":"+pg_port+"/"+pg_database
+    conn_string ="postgresql://"+pg_user+":"+pg_password+"@"+pg_host+":"+pg_port+"/"+pg_database
 
     # connect to the database
     conn = create_engine(conn_string)
@@ -80,12 +80,12 @@ def read_old_tree_data(conn, database_dict):
     attribute_list = old_trees.columns
     print(old_trees.head())
     print(attribute_list)
-    
+
     # create a duplicated table for testing if replace parameter in config.yml ist set to False
     if database_dict['replace-table'] == False:
         table_name = 'trees_new'
         old_trees.to_postgis(table_name, conn, if_exists='replace')
-        
+
     # keep only columns that are needed for comparing, merging or checking the data
     old_trees = old_trees[['id','kennzeich','standortnr','geom', 'standalter',
        'kronedurch', 'stammumfg', 'baumhoehe','gmlid']]
@@ -102,7 +102,7 @@ def read_old_tree_data(conn, database_dict):
         raise Exception(msg)
 
     return old_trees, attribute_list, table_name
-    
+
 
 def update_db(conn, result, update_attributes_list, table_name):
     """Takes the subset of tree data were updates were found and updates the respective columns in the dataset in the database.
@@ -163,7 +163,7 @@ def delete_from_db(conn, result, table_name):
 
             # Log progress after every 1,000 trees
             if i % 1000 == 0:
-                logger.info("⬇️  Deleted {} trees".format(i))        
+                logger.info("⬇️  Deleted {} trees".format(i))
 
         logger.info("⬇️  Sucessfully deleted " + str(len(result)) + " trees in data table " + table_name + ".")
     except Exception as e:
@@ -199,7 +199,7 @@ def add_to_db(conn, result, table_name):
         for c in result.columns:
             cols += '"%s", ' % c
         cols = cols[:-2]
-        
+
         append_sql = f"INSERT INTO {table_name}({cols}) SELECT * FROM added_trees_tmp"
         conn.execute(append_sql)
 
@@ -227,7 +227,7 @@ def drop_dublicates(conn, table_name):
             # drop duplicated trees
             count = conn.execute(f"SELECT COUNT(*) FROM (SELECT id, ROW_NUMBER() OVER (partition BY gmlid ORDER BY id) AS rnum FROM {table_name}) t WHERE t.rnum > 1").scalar()
             conn.execute(f"DELETE FROM {table_name} WHERE id IN (SELECT id FROM (SELECT id, ROW_NUMBER() OVER (partition BY gmlid ORDER BY id) AS rnum FROM {table_name}) t WHERE t.rnum > 1)")
-            
+
             # drop watering records for deleted trees
             conn.execute(f"DELETE FROM trees_watered WHERE tree_id NOT IN (SELECT id FROM {table_name})")
 
@@ -238,4 +238,3 @@ def drop_dublicates(conn, table_name):
     except Exception as e:
         logger.info('❌  No trees found that share the same gmlid.')
         logging.exception('Error occurred while deleting trees: {}'.format(e))
-
