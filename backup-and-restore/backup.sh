@@ -10,4 +10,4 @@ pg_dump \
 	--schema=public \
 	--table=trees \
 	--table=trees_watered \
-	--table=trees_adopted >./backup/gdk-local.dump
+	--table=trees_adopted >./backup/gdk-staging.dump

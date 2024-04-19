@@ -42,9 +42,9 @@ def start_db_connection():
     # connect to the database
     conn = create_engine(conn_string)
     try:
-        # Increase the statement timeout to 30 seconds
-        conn.execute("SET statement_timeout TO 30000")
-        logger.info("⏰ Statement timeout increased to 30 seconds")
+        # Increase the statement timeout to 0 seconds
+        conn.execute("SET statement_timeout TO 120000")
+        logger.info("⏰ Statement timeout increased to 120 seconds")
 
         conn.connect()
         logger.info("🗄  Database connection established")
@@ -72,7 +72,7 @@ def read_old_tree_data(conn, database_dict):
     # get name of table with old data
     table_name = database_dict['data-table-name']
     # create query for selecting the data table with trees
-    sql_query = 'SELECT * FROM ' + table_name
+    sql_query = 'SELECT id, kennzeich, standortnr, geom, standalter, kronedurch, stammumfg, baumhoehe, gmlid FROM ' + table_name
     # import data and create dataframe
     old_trees = gpd.GeoDataFrame.from_postgis(sql_query, conn, geom_col='geom')
 
