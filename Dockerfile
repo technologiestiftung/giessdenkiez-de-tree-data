@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y \
 	libproj-dev \
 	python3-dev \
 	gdal-bin \
-	libgdal-dev \
+	ripgrep \
+  libgdal-dev \
 	gcc \
   postgresql-client \
 	tmux \
