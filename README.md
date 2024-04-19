@@ -104,11 +104,11 @@ data-schema:
 - .env that contains database credentials
 
 ```yml
-PG_SERVER=
-PG_PORT=
-PG_USER=
-PG_PASS=
-PG_DB=
+PGHOST=
+PGPORT=
+PGUSER=
+PG_PASSWORD=
+PGDATABASE=
 ```
 
 ## Example Usage

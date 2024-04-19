@@ -8,8 +8,8 @@ database:
 year: 24
 
 new-data-files:
-  - s_wfs_baumbestand_2024-3-27.geojson
-  - s_wfs_baumbestand_an_2024-3-27.geojson
+  - s_wfs_baumbestand_2024-4-19.geojson
+  - s_wfs_baumbestand_an_2024-4-19.geojson
 
 data-schema:
   mapping:
