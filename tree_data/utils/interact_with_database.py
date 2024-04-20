@@ -6,9 +6,10 @@ import sys
 from dotenv import load_dotenv
 import geopandas as gpd
 from shapely.wkt import dumps
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.sql import text
 from geoalchemy2 import Geometry, WKTElement
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -56,6 +57,65 @@ def start_db_connection():
         logger.error(msg)
         raise Exception(msg)
 
+def read_old_tree_data_with_limit_and_offset(conn, database_dict):
+    """Load tree data from the database in paginated batches and assemble into a complete DataFrame.
+
+    Args:
+        conn (class 'sqlalchemy.engine.base.Engine'): The engine object for connecting to the database.
+        database_dict (dict): Dictionary containing database-specific parameters including the table name.
+
+    Returns:
+        old_trees (GeoDataFrame): Assembled tree data.
+        attribute_list (list): Column names of the old tree data table.
+        table_name (str): Name of the table in the database that is used.
+    """
+    table_name = database_dict['data-table-name']
+
+    # Assuming a standard batch size; adjust as necessary.
+    batch_size = 10000
+    offset = 0
+    has_more_records = True
+    full_data = None
+
+    while has_more_records:
+        raw_sql = f'SELECT * FROM {table_name} LIMIT {batch_size} OFFSET {offset}'
+        logger.info(f'Processing batch with SQL: {raw_sql}')
+        # Temporary load of data, adjust for GeoDataFrame construction as necessary, especially the 'geom_col' parameter
+        batch = gpd.GeoDataFrame.from_postgis(raw_sql, conn, geom_col='geom')
+
+        # Check if the batch is smaller than the batch_size or empty
+        if batch.shape[0] < batch_size:
+            has_more_records = False
+
+        if full_data is None:
+            full_data = batch
+        else:
+            full_data = pd.concat([full_data, batch], ignore_index=True)
+
+        offset += batch_size
+
+    # Process the full_data as in your original function
+    if full_data is not None:
+        attribute_list = full_data.columns.tolist()
+        full_data['standortnr'] = full_data['standortnr'].str.split('.').str[0]
+        full_data = full_data[['id', 'kennzeich', 'standortnr', 'geom', 'standalter', 'kronedurch', 'stammumfg', 'baumhoehe', 'gmlid']]
+
+        # Log the number of trees processed
+        tree_count = len(full_data.index)
+        if tree_count > 0:
+            logger.info(f"🌳 Loaded old tree data from the Database in batches. The dataset includes {tree_count} trees.")
+        else:
+            msg = "❌ No trees loaded from the database. Something went wrong."
+            logger.error(msg)
+            raise Exception(msg)
+    else:
+        # If no data was loaded
+        attribute_list = []
+        msg = "❌ No trees loaded from the database. The table might be empty."
+        logger.error(msg)
+        raise Exception(msg)
+
+    return full_data, attribute_list, table_name
 
 def read_old_tree_data(conn, database_dict):
     """Load currently used "old" tree data from the database to a dataframe.
@@ -72,7 +132,7 @@ def read_old_tree_data(conn, database_dict):
     # get name of table with old data
     table_name = database_dict['data-table-name']
     # create query for selecting the data table with trees
-    sql_query = 'SELECT id, kennzeich, standortnr, geom, standalter, kronedurch, stammumfg, baumhoehe, gmlid FROM ' + table_name
+    sql_query = 'SELECT * FROM ' + table_name
     # import data and create dataframe
     old_trees = gpd.GeoDataFrame.from_postgis(sql_query, conn, geom_col='geom')
 
