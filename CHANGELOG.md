@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/compare/v1.0.1...v1.1.0) (2024-04-20)
+
+
+### Features
+
+* Select trees in batches ([51e8554](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/51e8554a5667e127f2a84007b08f1b25dd8f490b))
+
 ## [1.0.1](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/compare/v1.0.0...v1.0.1) (2024-04-19)
 
 
