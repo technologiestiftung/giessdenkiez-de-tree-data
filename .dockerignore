@@ -1,5 +1,5 @@
 tree_data/data_files/*.csv
-tree_data/data_files/*.geojson
+tree_data/data_files/*.geo.json
 .devcontainer/
 .github
 node_modules/
