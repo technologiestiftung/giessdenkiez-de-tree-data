@@ -3,7 +3,7 @@ import psycopg2
 import psycopg2.extras
 import os
 import sys
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 import geopandas as gpd
 from shapely.wkt import dumps
 from sqlalchemy import create_engine, select
@@ -25,7 +25,7 @@ def start_db_connection():
     """
 
     # load database parameters from .env
-    load_dotenv()
+    # load_dotenv()
     # check if all required environmental variables are accessible
     for env_var in ["PGDATABASE", "PGPORT", "PGUSER", "PGPASSWORD", "PGHOST"]:
         if env_var not in os.environ:
