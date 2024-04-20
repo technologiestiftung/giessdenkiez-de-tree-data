@@ -12,9 +12,9 @@ We use these Python scripts to automate this. Using the script `get_data_from_wf
 
 ## Requirements
 
-- Python > 3.8
+- Python >= 3.9
 - GDAL (as a dependency for geopandas)
-- Docker
+- Docker (optional bat easier to handle)
 
 To make sure we have a consistent environment, we created a docker image with all dependencies installed. We do not recommend running this on your host machine. To build the image, run:
 
@@ -26,7 +26,7 @@ This image will create a container where you can run an interactive shell sessio
 
 ```bash
 docker run --name gdk-python-runner --detach \
-		--env-file $(pwd)/tree_data/.env \
+		--env-file $(pwd)/.env \
 		--volume "$(pwd)/tree_data:/usr/app/tree_data" \
 		technologiestiftung/giessdenkiez-de-tree-data
 ```
@@ -73,8 +73,8 @@ database:
   replace-table: True
 
 new-data-files:
-  - s_wfs_baumbestand-YYYY-M-DD.geojson
-  - s_wfs_baumbestand_an-YYYY-M-DD.geojson
+  - s_wfs_baumbestand-YYYY-M-DD.geo.json
+  - s_wfs_baumbestand_an-YYYY-M-DD.geo.json
 
 data-schema:
   mapping:
@@ -113,7 +113,13 @@ PGDATABASE=
 
 ## Example Usage
 
-1. Step: Download newest tree data from the FIS-Broker. Locally run:
+- Install requirements
+
+```bash
+pip install -r requirements.txt
+```
+
+- Download newest tree data from the FIS-Broker. Locally run:
 
 ```bash
 python tree_data/get_data_from_wfs.py
@@ -125,11 +131,11 @@ python tree_data/get_data_from_wfs.py
 year: 23
 
 new-data-files:
-  - s_wfs_baumbestand_YYYY-MM-DD.geojson
-  - s_wfs_baumbestand_an_YYYY-MM-DD.geojson
+  - s_wfs_baumbestand_YYYY-MM-DD.geo.json
+  - s_wfs_baumbestand_an_YYYY-MM-DD.geo.json
 ```
 
-3. Setp: Configure you `.env` file and provide the credentials of your production database
+3. Step: Configure you environment using the variables in `.env` file and provide the credentials of your production database. We recommend using something like [direnv](https://direnv.net/) to manage your environment variables.
 
 4. Step: Execute `main.py` to connect to your production database and finally update the database:
 
