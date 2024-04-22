@@ -6,7 +6,7 @@ from utils.process_data import read_config, transform_new_tree_data, compare_tre
 
 # logger configuration
 logger = logging.getLogger('root')
-# FORMAT = "[%(asctime) %(name) %(levelname) - %(funcName)20s() ] %(message)s"
+
 FORMAT = "[%(levelname)s %(name)s] %(message)s"
 logging.basicConfig(format=FORMAT)
 logger.setLevel(logging.INFO)
@@ -19,7 +19,7 @@ new_trees_paths_list, schema_mapping_dict, update_attributes_list, merge_attribu
 
 # Connect to the database. Database parameters are set in the .env
 conn = start_db_connection()
-# Import the current tree data from database. Name of the table is set in config.yaml
+# Import the current tree data from database. Name of the table is set in conf.yml
 old_trees, attribute_list, table_name = read_old_tree_data_with_limit_and_offset(conn, database_dict)
 
 # Import raw tree data as dataframe from files. Filenames are set in config.yaml

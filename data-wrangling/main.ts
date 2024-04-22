@@ -1,27 +1,50 @@
 /**
-* We need a tableto store the data in
-* create it like this in the database
-CREATE TABLE IF NOT EXISTS temp_trees (
-	gmlid TEXT,
-	baumid TEXT,
-	standortnr TEXT,
-	kennzeich TEXT,
-	namenr TEXT,
-	artdtsch TEXT,
-	artbot TEXT,
-	gattungdeutsch TEXT,
-	gattung TEXT,
-	art_gruppe TEXT,
-	pflanzjahr int,
-	standalter text,
-	stammumfg text,
-	bezirk TEXT,
-	eigentuemer TEXT,
-	kronedurch text,
-	baumhoehe text,
-	geom geometry(Geometry,4326)
+* We need a table to store the data in
+
+CREATE TABLE "public"."temp_an_trees" (
+    "gmlid" text,
+    "baumid" text,
+    "standortnr" text,
+    "kennzeich" text,
+    "namenr" text,
+    "artdtsch" text,
+    "artbot" text,
+    "gattungdeutsch" text,
+    "gattung" text,
+    "art_gruppe" text,
+    "pflanzjahr" int4,
+    "standalter" text,
+    "stammumfg" text,
+    "bezirk" text,
+    "eigentuemer" text,
+    "kronedurch" text,
+    "baumhoehe" text,
+    geom geometry(Geometry,4326)
 );
 
+CREATE TABLE "public"."temp_trees" (
+    "gmlid" text,
+    "baumid" text,
+    "standortnr" text,
+    "kennzeich" text,
+    "namenr" text,
+    "artdtsch" text,
+    "artbot" text,
+    "gattungdeutsch" text,
+    "gattung" text,
+    "art_gruppe" text,
+    "strname" text,
+    "hausnr" text,
+    "pflanzjahr" int4,
+    "standalter" text,
+    "stammumfg" text,
+    "baumhoehe" text,
+    "bezirk" text,
+    "eigentuemer" text,
+    "zusatz" text,
+    "kronedurch" text,
+    geom geometry(Geometry,4326)
+);
 
 */
 import postgres from "npm:postgres";
