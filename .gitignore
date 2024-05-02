@@ -96,6 +96,7 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+.envrc
 
 # Spyder project settings
 .spyderproject
@@ -123,4 +124,7 @@ myvenv/node_modules
 
 node_modules
 tree_data/data_files/*json
+tests/data/*json
 backup-and-restore/backup/*.dump
+
+.vscode
