@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 /**
 * We need a table to store the data in
 
@@ -53,9 +54,7 @@ import { parseArgs } from "jsr:@std/cli/parse-args";
 import { MultiProgressBar } from "jsr:@deno-library/progress";
 import { delay } from "jsr:@std/async";
 // import the geojson file
-import geojson from "../tree_data/data_files/s_wfs_baumbestand_2024-4-19.geo.json" with {
-	type: "json",
-};
+import geojson from "../tree_data/data_files/s_wfs_baumbestand_2024-4-19.geo.json" with { type: "json" };
 
 const tableName = "temp_trees";
 
@@ -86,7 +85,7 @@ if (import.meta.main) {
 		const keys = Object.keys(feature.properties);
 		keys.forEach((key) => {
 			const newKey = config["data-schema"]["mapping"][key] || key;
-			if (!props[newKey] && (feature.properties[key] !== null)) {
+			if (!props[newKey] && feature.properties[key] !== null) {
 				props[newKey] = typeof feature.properties[key];
 			}
 		});
@@ -105,13 +104,12 @@ if (import.meta.main) {
 				return `${key} TEXT`;
 			} else if (type === "number") {
 				return `${key} NUMERIC`;
-			} else {
-				return `${key} TEXT`;
 			}
+			return `${key} TEXT`;
 		});
-		const createTable = `CREATE TABLE IF NOT EXISTS ${tableName} (${
-			types.join(", ")
-		});`;
+		const createTable = `CREATE TABLE IF NOT EXISTS ${tableName} (${types.join(
+			", ",
+		)});`;
 		console.log("Currently only creating statements");
 		console.log(createTable);
 		Deno.exit(0);
@@ -122,18 +120,20 @@ if (import.meta.main) {
 		const trees = [];
 		const total = geojson.features.length;
 		for (let i = 0; i < total; i++) {
-			await bars.render([{
-				completed: i + 1,
-				total,
-				text: "trees imported:",
-				complete: "*",
-				incomplete: ".",
-			}]);
+			await bars.render([
+				{
+					completed: i + 1,
+					total,
+					text: "trees imported:",
+					complete: "*",
+					incomplete: ".",
+				},
+			]);
 			const feature = geojson.features[i];
 			const values = keys.map((key) => {
 				const origKey =
-					Object.keys(config["data-schema"]["mapping"]).find((k) =>
-						config["data-schema"]["mapping"][k] === key
+					Object.keys(config["data-schema"]["mapping"]).find(
+						(k) => config["data-schema"]["mapping"][k] === key,
 					) || key;
 				const res = {};
 
@@ -145,9 +145,9 @@ if (import.meta.main) {
 			// https://fbinter.stadt-berlin.de/fb/index.jsp?loginkey=zoomStart&mapId=k_wfs_baumbestand@senstadt&bbox=389138,5819243,390887,5820322
 			// ETRS89 / UTM zone 33N
 			const geom =
-				await sql`SELECT ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(${
-					JSON.stringify(feature.geometry)
-				}), 25833), 4326) as geom`;
+				await sql`SELECT ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(
+					feature.geometry,
+				)}), 25833), 4326) as geom`;
 
 			values.push(geom[0]);
 
