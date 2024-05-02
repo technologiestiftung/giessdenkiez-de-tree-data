@@ -128,3 +128,4 @@ tests/data/*json
 backup-and-restore/backup/*.dump
 
 .vscode
+.zed/settings.json
