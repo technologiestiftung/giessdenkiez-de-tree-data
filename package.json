@@ -6,7 +6,8 @@
 	"main": "dist/index.js",
 	"scripts": {
 		"dev": "node --no-warnings --import tsx --watch src/cli.ts",
-		"test": "echo \"Error: no test specified\" && exit 0"
+		"test": "echo \"Error: no test specified\" && exit 0",
+		"test:generate:geojson": "node --no-warnings --import tsx tests/generate-test-geojson.ts"
 	},
 	"keywords": [],
 	"author": "ff6347 <hash@ff6347.email>",

@@ -154,6 +154,14 @@ In Gieß den Kiez it is visible which trees are maintained by Berlin's street an
 5. JOIN new caretaker labels to the trees: `UPDATE trees t SET caretaker = 'Bezirk XY' FROM caretaker_ids c WHERE t.gmlid = c.id`
 6. Delete the no longer needed table: `DROP TABLE caretaker_ids`
 
+## Testing
+
+To generate some test data you can run this script:
+
+```bash
+npm run test:generate:geojson -- --input-file ./tree_data/data_files/s_wfs_baumbestand_2024-4-19.geo.json --output-file ./tests/data/test.geo.json --count 10
+```
+
 ## Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
