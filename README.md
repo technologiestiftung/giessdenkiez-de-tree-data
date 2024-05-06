@@ -19,7 +19,7 @@ Using a Node.js cli we do the following steps:
 ## Requirements
 
 - Python >= 3.9
-- Node.js >= 20
+- Node.js >= 20 (we recommend using [nvm](https://nvm.sh) to manage your Node.js versions)
 - GDAL (as a dependency for geopandas)
 - Docker (optional bat easier to handle)
 
@@ -27,7 +27,9 @@ Using a Node.js cli we do the following steps:
 
 ### Environment Variables
 
-`.env` that contains database credentials
+We do not make assumptions how your environment loads variables. At Technologiestiftung we use [direnv](https://direnv.net/) to manage our environment variables. You can also use a `.env` file to store your environment variables and load it with [the `--env-file` flag from Node.js](https://nodejs.org/en/learn/command-line/how-to-read-environment-variables-from-nodejs).
+
+`.env` contains database credentials.
 
 ```plain
 PGHOST=
@@ -39,7 +41,9 @@ PGDATABASE=
 
 ### Data Download with Python
 
-To make sure we have a consistent environment, we created a docker image with all dependencies installed. We do not recommend running this on your host machine. To build the image, run:
+> [!WARNING] This will be removed and should be replaced with the Node.js script.
+
+To make sure we have a consistent environment, we created a docker image with all dependencies for the python scripts installed. We do not recommend running this on your host machine. To build the image, run:
 
 ```bash
 docker build -t technologiestiftung/giessdenkiez-de-tree-data .
@@ -63,56 +67,91 @@ docker exec -it gdk-python-runner /bin/bash
 cd /usr/app/
 # download the data
 python tree_data/get_data_from_wfs.py
-# update the database
-# make sure to update the tree_data/conf.yml file with the correct filenames
-python tree_data/main.py
-
 ```
 
 For convinence see the [Makefile](./Makefile) for more commands.
 
-## Inputs
+### Data Processing with Node.js
 
-- New tree data in GML or GeoJSON format
-- config.yaml that configurates paths, tablesnames, overwritting, mapping of column names and columns to update
-
-## Example Usage
-
-- Install requirements
+As outlined above we have to do several steps to process the data.
+First install all dependencies:
 
 ```bash
-pip install -r requirements.txt
+# install node 20
+nvm use
+# install dependencies
+npm ci
 ```
 
-- Download newest tree data from the FIS-Broker. Locally run:
+We currently have not defined a build step yet. Execute the cli using tsx as loader for Node.js.
 
 ```bash
-python tree_data/get_data_from_wfs.py
+node --import tsx src/cli.ts
 ```
 
-2. Step: Set filename and current year in the `conf.yml`
-
-```yml
-year: 23
-
-new-data-files:
-  - s_wfs_baumbestand_YYYY-MM-DD.geo.json
-  - s_wfs_baumbestand_an_YYYY-MM-DD.geo.json
-```
-
-3. Step: Configure you environment using the variables in `.env` file and provide the credentials of your production database. We recommend using something like [direnv](https://direnv.net/) to manage your environment variables.
-
-4. Step: Execute `main.py` to connect to your production database and finally update the database:
+To see the help message run:
 
 ```bash
-python tree_data/main.py
+node --import tsx src/cli.ts --help
+```
+
+Below are the main steps you need to take to update the database. Each step should be run separately. This allows to chech in between if everything is working as expected. We recommend to run the steps in the following order:
+
+1. create-temp-table
+2. import-geojson
+3. delete-trees
+4. upsert-trees
+5. clean-up
+
+Test your process on a local version of the database before running it on the production database.
+
+#### Create a new temporary table in the database
+
+The name of the temporary table is `temp_trees` is currently hardcoded src/config.ts
+
+```bash
+node --import tsx src/cli.ts  --create-temp-table
+```
+
+#### Insert the geojson data into the temporary table
+
+The download will generate two files for you. One for the "anlage" trees one for the "strasse" trees. You need import them separately. using the --set-tree-type flag you can set the tree type.
+The file names will differ depending on the date you downloaded the data.
+
+```bash
+node --import tsx src/cli.ts --import-geojson=./tree_data/data_files/s_wfs_baumbestand_an_2024-4-19.geo.json --set-tree-type=anlage
+node --import tsx src/cli.ts --import-geojson=./tree_data/data_files/s_wfs_baumbestand_2024-4-19.geo.json --set-tree-type=strasse
+```
+
+#### Delete all trees that are no longer in the new dataset
+
+This will remove all trees from the table `trees` that are not in the temporary table `temp_trees`. It will also clean out the tables `trees_adopted` and `trees_watered`.
+
+```bash
+node --import tsx src/cli.ts --delete-trees
+```
+
+#### Update and Insert (upsert) all trees that are in the new dataset
+
+This will update all trees that are in the temporary table `temp_trees` and insert all trees that are not in the table `trees`.
+
+```bash
+node --import tsx src/cli.ts --upsert-trees
+```
+
+#### Clean up the temporary table
+
+This will drop the temporary table `temp_trees`.
+
+```bash
+node --import tsx src/cli.ts --clean-up
 ```
 
 ## Updating Caretaker labels
 
 In Gieß den Kiez it is visible which trees are maintained by Berlin's street and green space offices. However, this information is not included in the offical Berlin tree dataset. Instead, Berlin's green space offices provide separate Excel tables containing the trees they water. This information needs to be entered 'manually' into the database table "trees" using SQL commands. The procedure is as follows:
 
-1. Extract only the FIS-Broker-ID'S (gmlids) from the Excel sheet to a csv file
+1. Extract only the FIS-Broker-ID'S (gml_ids) from the Excel sheet to a csv file
 2. Create a new table with this ID's in the database: `CREATE TABLE caretaker_ids(id VARCHAR NOT NULL)`
 3. Import ID’s from CSV-Table into the database table
 4. Delete old caretaker labels from the trees table: `UPDATE trees SET caretaker = NULL`
