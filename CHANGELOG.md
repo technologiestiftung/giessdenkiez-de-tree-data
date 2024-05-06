@@ -1,3 +1,19 @@
+# [1.2.0](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/compare/v1.1.0...v1.2.0) (2024-05-06)
+
+
+### Bug Fixes
+
+* **.env:** Move .env to root of repo ([3dac80d](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/3dac80d65d7148aa28c731ba8f22bbb1aa541e04))
+* Rename ext geojson to json ([bf1b081](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/bf1b081881dbbe406e70f4b0ccf0e47fb344f7f8))
+* **upsert:** Query does upsert now ([3d1b9d5](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/3d1b9d5dd51bdbc0fdd3e65023f25432c3142ad9))
+
+
+### Features
+
+* App error type ([d3bf334](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/d3bf334a910245fd227ef8840f5bf3ca82354814))
+* **importer:** Adds WIP state of importer CI ([3c36b4d](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/3c36b4d5cc9692e1b8c50de7af63e86173c811c0))
+* Make connection options non optional ([091781b](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/091781b7f06d158e9ae7c502ac6b1d68c6cd7777))
+
 # [1.1.0](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/compare/v1.0.1...v1.1.0) (2024-04-20)
 
 
