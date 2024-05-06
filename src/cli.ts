@@ -10,6 +10,7 @@ import { createTable } from "./db/create-table.js";
 import { insertGeoJson } from "./db/insert-geojson.js";
 import { deleteTrees } from "./db/delete-trees.js";
 import { upsertTrees } from "./db/upsert-trees.js";
+import { cleanUp } from "./db/clean-up.js";
 // const spinner = ora("Loading unicorns").start();
 
 // const args = [
@@ -36,6 +37,7 @@ async function cli() {
 				"delete-trees": { type: "boolean", default: false, short: "d" },
 				help: { type: "boolean", default: false, short: "h" },
 				"import-geojson": { type: "string", short: "i" },
+				"clean-up": { type: "boolean" },
 				pghost: { type: "string", default: PGHOST },
 				pgport: { type: "string", default: PGPORT },
 				pguser: { type: "string", default: PGUSER },
@@ -61,6 +63,8 @@ Options:
   -r, --dry-run            Perform a dry run. Default is false.
   -t --set-tree-type       Specify the type of tree during import.
                            Can be "anlage" or "strasse". Default is null.
+
+      --clean-up           Removes all temp tables.
 
       --pghost             Specify the PostgreSQL host.
                            Default is the value of the PGHOST environment variable.
@@ -126,6 +130,14 @@ Options:
 				host: values.pghost,
 			});
 			await upsertTrees(sql);
+			process.exit(0);
+		}
+
+		if (values["clean-up"]) {
+			const sql = createDatabeConnection({
+				host: values.pghost,
+			});
+			await cleanUp(sql);
 			process.exit(0);
 		}
 	} catch (e: unknown) {
