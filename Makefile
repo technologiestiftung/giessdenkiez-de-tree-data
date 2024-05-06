@@ -10,7 +10,7 @@ build:
 # Run docker container
 run:
 	docker run --rm --name ${CONTAINER_NAME} --detach \
-		--env-file $(shell pwd)/tree_data/.env \
+		--env-file $(shell pwd)/.env \
 		--volume "$(shell pwd)/backup-and-restore:/usr/app/backup-and-restore" \
 		--volume "$(shell pwd)/tree_data:/usr/app/tree_data" \
 		${IMAGE_NAME}

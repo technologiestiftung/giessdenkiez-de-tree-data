@@ -3,16 +3,29 @@
 	"version": "1.1.0",
 	"type": "module",
 	"description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
-	"main": "prettier.config.js",
+	"main": "dist/index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 0"
+		"dev": "node --no-warnings --import tsx --watch src/cli.ts",
+		"test": "echo \"Error: no test specified\" && exit 0",
+		"test:generate:geojson": "node --no-warnings --import tsx tests/generate-test-geojson.ts"
 	},
 	"keywords": [],
 	"author": "ff6347 <hash@ff6347.email>",
 	"license": "MIT",
 	"devDependencies": {
+		"@technologiestiftung/eslint-config": "0.1.4",
 		"@technologiestiftung/prettier-config": "1.0.0",
 		"@technologiestiftung/semantic-release-config": "1.2.4",
-		"semantic-release": "23.0.6"
+		"@types/geojson": "7946.0.14",
+		"@types/node": "20.12.7",
+		"globals": "15.0.0",
+		"postgres": "3.4.4",
+		"prettier": "3.2.5",
+		"semantic-release": "23.0.6",
+		"tsx": "4.7.2",
+		"typescript": "5.4.5"
+	},
+	"dependencies": {
+		"ora": "8.0.1"
 	}
 }

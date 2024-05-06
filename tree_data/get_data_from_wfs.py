@@ -25,8 +25,8 @@ def get_wfs(wfs_url, wfs_output_format, outfile_name):
     # Read data from URL
     data = gpd.read_file(q)
 
-    data.to_file(outfile_name + ".geojson", driver="GeoJSON")
-    print('WFS was written to file' + outfile_name + ".geojson")
+    data.to_file(outfile_name + ".geo.json", driver="GeoJSON")
+    print('WFS was written to file' + outfile_name + ".geo.json")
 
 # set urls to wfs services
 wfs_trees_streets = 'https://fbinter.stadt-berlin.de/fb/wfs/data/senstadt/s_wfs_baumbestand'
