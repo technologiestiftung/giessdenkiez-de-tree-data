@@ -6,15 +6,38 @@ _This is a script to harvest tree data from a Web Feature Service from Berlins G
 
 In the application [Gieß-den-Kiez.de](https://giessdenkiez.de), Berlin's street trees are displayed on a map. The data about the trees comes from Berlin's street and green space offices and is made available as open data via Berlin's Geodata portal, the [FIS-Broker](https://fbinter.stadt-berlin.de/fb/index.jsp). The underlying database, the green space information system (GRIS), is continuously maintained by the administration: Trees not yet recorded and newly planted trees are entered and felled trees are deleted. The data set is then updated in the Geodata portal once a year, always in spring. In order to reflect the current status, the data in Gieß den Kiez is therefore also updated once a year when the new [tree dataset](https://fbinter.stadt-berlin.de/fb/index.jsp?loginkey=zoomStart&mapId=k_wfs_baumbestand@senstadt&bbox=389138,5819243,390887,5820322) is published.
 
-We use these Python scripts to automate this. Using the script `get_data_from_wfs.py`, the data can be downloaded from the FIS-Broker in GeoJSON format and saved locally. Using `main.py` we connect to our Gieß-den-Kiez database and the data is then compared with the existing tree data of the database using their GML-IDs (also called technical IDs in the FIS-Broker). In this way, deleted and added trees are identified and removed or added from the database. All matching trees are also identified and updated for the columns specified in `config.yml`.
+We use these Python and Node.js to automate this. Using the script `get_data_from_wfs.py`, the data can be downloaded from the FIS-Broker in GeoJSON format and saved locally.
 
-![tree_data_schema](https://user-images.githubusercontent.com/61182572/124777121-44cb3080-df40-11eb-9e49-4cccad77b821.png)
+Using a Node.js cli we do the following steps:
+
+1. Create a new temporary table in the database
+2. Insert the geojson data into the temporary table
+3. Delete all trees that are no longer in the new dataset
+4. Update and Insert (upsert) all trees that are in the new dataset
+5. Clean up the temporary table
 
 ## Requirements
 
 - Python >= 3.9
+- Node.js >= 20
 - GDAL (as a dependency for geopandas)
 - Docker (optional bat easier to handle)
+
+## Usage
+
+### Environment Variables
+
+`.env` that contains database credentials
+
+```plain
+PGHOST=
+PGPORT=
+PGUSER=
+PG_PASSWORD=
+PGDATABASE=
+```
+
+### Data Download with Python
 
 To make sure we have a consistent environment, we created a docker image with all dependencies installed. We do not recommend running this on your host machine. To build the image, run:
 
@@ -48,68 +71,10 @@ python tree_data/main.py
 
 For convinence see the [Makefile](./Makefile) for more commands.
 
-Currently
-
-```bash
-# build the image
-make build
-# run the container
-make run
-# run ineractive tty session
-make shell
-# remove the container
-make clean
-```
-
 ## Inputs
 
 - New tree data in GML or GeoJSON format
 - config.yaml that configurates paths, tablesnames, overwritting, mapping of column names and columns to update
-
-```yml
-database:
-  parameter-path: .env
-  data-table-name: trees
-  replace-table: True
-
-new-data-files:
-  - s_wfs_baumbestand-YYYY-M-DD.geo.json
-  - s_wfs_baumbestand_an-YYYY-M-DD.geo.json
-
-data-schema:
-  mapping:
-    art_bot: artbot
-    art_dtsch: artdtsch
-    gattung_deutsch: gattungdeutsch
-    gml_id: gmlid
-  merge-on:
-    - gmlid
-  update:
-    - standalter
-    - baumhoehe
-    - kronedurch
-    - stammumfg
-    - gmlid
-    - lat
-    - lng
-    - standortnr
-    - kennzeich
-    - artdtsch
-    - artbot
-    - gattungdeutsch
-    - gattung
-    - pflanzjahr
-```
-
-- .env that contains database credentials
-
-```yml
-PGHOST=
-PGPORT=
-PGUSER=
-PG_PASSWORD=
-PGDATABASE=
-```
 
 ## Example Usage
 
