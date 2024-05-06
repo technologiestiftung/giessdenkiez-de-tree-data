@@ -1,49 +1,50 @@
 import postgres from "postgres";
 import { UserError } from "../errors.js";
 import { config } from "../config.js";
+import ora from "ora";
+import { doesTableExist } from "./utils.js";
 
 export async function upsertTrees(sql: postgres.Sql) {
+	const spinner = ora("Starting upsert").start();
+
 	const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();
 	try {
 		if (!dryRun) {
+			const tableExists = await doesTableExist(sql, tempTreesTable);
+			if (!tableExists) {
+				spinner.fail(`Table ${tempTreesTable} does not exists`);
+				throw new UserError(`Table ${tempTreesTable} does not exists`);
+			}
+			spinner.text = `Checking ${tempTreesTable}`;
 			const result = await sql`select count(1) from ${sql(tempTreesTable)};`;
-
+			spinner.text = `This will upsert ${result[0].count} records`;
 			const upsertResult = await sql`
-			INSERT INTO trees (gml_id, standortnr, kennzeich, namenr, art_dtsch, art_bot, gattung_deutsch, gattung, strname, hausnr, pflanzjahr, standalter, stammumfg, baumhoehe, bezirk, eigentuemer, zusatz, kronedurch, "type", geom)
-			SELECT
-				gml_id,
-				standortnr,
-				kennzeich,
-				namenr,
-				art_dtsch,
-				art_bot,
-				gattung_deutsch,
-				gattung,
-				strname,
-				hausnr,
-				pflanzjahr,
-				standalter,
-				stammumfg,
-				baumhoehe,
-				bezirk,
-				eigentuemer,
-				zusatz,
-				kronedurch,
-				"type",
-				geom
-			FROM
-				${sql(tempTreesTable)} AS temp_trees
-			WHERE
-				NOT EXISTS (
-					SELECT
-						1
-					FROM
-						trees
-					WHERE
-						trees.gml_id = temp_trees.gml_id) ON CONFLICT (gml_id)
-					DO
-					UPDATE
-					SET
+			INSERT INTO trees (gml_id, standortnr, kennzeich,  art_dtsch, art_bot, gattung_deutsch, gattung, strname, hausnr,
+				pflanzjahr, standalter, stammumfg, baumhoehe, bezirk, eigentuemer, zusatz, kronedurch, "type", geom)
+				SELECT
+						gml_id,
+						standortnr,
+						kennzeich,
+						art_dtsch,
+						art_bot,
+						gattung_deutsch,
+						gattung,
+						strname,
+						hausnr,
+						pflanzjahr,
+						standalter,
+						stammumfg,
+						baumhoehe,
+						bezirk,
+						eigentuemer,
+						zusatz,
+						kronedurch,
+						"type",
+						geom
+				FROM ${sql(tempTreesTable)} AS temp_trees
+				ON CONFLICT (gml_id)
+				DO UPDATE
+				SET
 						standortnr = excluded.standortnr,
 						kennzeich = excluded.kennzeich,
 						art_dtsch = excluded.art_dtsch,
@@ -61,9 +62,9 @@ export async function upsertTrees(sql: postgres.Sql) {
 						zusatz = excluded.zusatz,
 						kronedurch = excluded.kronedurch,
 						"type" = excluded."type",
-						geom = excluded.geom;
+						geom = excluded.geom
 			`;
-			console.log(result);
+			spinner.succeed(`Upserted records`);
 		}
 	} catch (error) {
 		if (error instanceof UserError) {
