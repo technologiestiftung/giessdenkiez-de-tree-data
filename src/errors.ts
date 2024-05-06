@@ -4,3 +4,10 @@ export class UserError extends Error {
 		this.name = "UserError";
 	}
 }
+
+export class ApplicationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "ApplicationError";
+	}
+}
