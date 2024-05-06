@@ -1,11 +1,11 @@
 import postgres from "postgres";
 
 interface DatabaseConfig {
-	host?: string;
-	port?: number;
-	database?: string;
-	username?: string;
-	password?: string;
+	host: string;
+	port: number;
+	database: string;
+	username: string;
+	password: string;
 }
 
 export function createDatabeConnection({
@@ -16,11 +16,11 @@ export function createDatabeConnection({
 	password,
 }: DatabaseConfig) {
 	const sql = postgres({
-		host: host,
-		port: port,
-		database: database,
-		username: username,
-		password: password,
+		host,
+		port,
+		database,
+		username,
+		password,
 	});
 
 	return sql;

@@ -3,7 +3,7 @@ import { createDatabeConnection } from "./db.js";
 import { PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE } from "./env.js";
 import { parseArgs } from "node:util";
 import { geojsonImporter } from "./geojson-import.js";
-import { UserError } from "./errors.js";
+import { ApplicationError, UserError } from "./errors.js";
 import { config, setUserConfig } from "./config.js";
 import { TreeType } from "./common.js";
 import { createTable } from "./db/create-table.js";
@@ -11,6 +11,7 @@ import { insertGeoJson } from "./db/insert-geojson.js";
 import { deleteTrees } from "./db/delete-trees.js";
 import { upsertTrees } from "./db/upsert-trees.js";
 import { cleanUp } from "./db/clean-up.js";
+import { getWfsData } from "./get-wfs-data.js";
 // const spinner = ora("Loading unicorns").start();
 
 // const args = [
@@ -30,6 +31,7 @@ async function cli() {
 		} = parseArgs({
 			// args,
 			options: {
+				"get-wfs-data": { type: "boolean" },
 				"create-temp-table": { type: "boolean", default: false, short: "c" },
 				"set-tree-type": { type: "string", short: "t" },
 				"upsert-trees": { type: "boolean", default: false, short: "u" },
@@ -63,6 +65,7 @@ Options:
   -r, --dry-run            Perform a dry run. Default is false.
   -t --set-tree-type       Specify the type of tree during import.
                            Can be "anlage" or "strasse". Default is null.
+      --get-wfs-data       Make a webreqwuets to the WFS server and save the data to a file.
 
       --clean-up           Removes all temp tables.
 
@@ -84,8 +87,59 @@ Options:
 			process.exit(0);
 		}
 
+		const { pgport, pgdatabase, pghost, pgpassword, pguser } = values;
+		if (!pgport) {
+			throw new UserError(
+				"The pgport option not set and not defined in the env.",
+			);
+		}
+		const port = !isNaN(parseInt(pgport, 10))
+			? parseInt(pgport, 10)
+			: undefined;
+		if (!port) {
+			throw new UserError("The pgport option should be a number.");
+		}
+
+		if (!pgdatabase) {
+			throw new UserError(
+				"The pgdatabase option not set and not defined in the env.",
+			);
+		}
+		const database = pgdatabase;
+		if (!pghost) {
+			throw new UserError(
+				"The pghost option not set and not defined in the env.",
+			);
+		}
+		const host = pghost;
+		if (!pgpassword) {
+			throw new UserError(
+				"The pgpassword option not set and not defined in the env.",
+			);
+		}
+
+		const password = pgpassword;
+		if (!pguser) {
+			throw new UserError(
+				"The pguser option not set and not defined in the env.",
+			);
+		}
+		const username = pguser;
+
+		const databaseOptions = {
+			host,
+			port,
+			database,
+			username,
+			password,
+		};
+
+		if (values["get-wfs-data"]) {
+			await getWfsData();
+			process.exit(0);
+		}
 		if (values["create-temp-table"]) {
-			const sql = createDatabeConnection({ host: values.pghost });
+			const sql = createDatabeConnection(databaseOptions);
 			await createTable(sql);
 			process.exit(0);
 		}
@@ -104,9 +158,7 @@ Options:
 		}
 
 		if (values["import-geojson"]) {
-			const sql = createDatabeConnection({
-				host: values.pghost,
-			});
+			const sql = createDatabeConnection(databaseOptions);
 			const geojson = await geojsonImporter({
 				filePath: values["import-geojson"],
 			});
@@ -118,25 +170,19 @@ Options:
 		}
 
 		if (values["delete-trees"]) {
-			const sql = createDatabeConnection({
-				host: values.pghost,
-			});
+			const sql = createDatabeConnection(databaseOptions);
 			await deleteTrees(sql);
 			process.exit(0);
 		}
 
 		if (values["upsert-trees"]) {
-			const sql = createDatabeConnection({
-				host: values.pghost,
-			});
+			const sql = createDatabeConnection(databaseOptions);
 			await upsertTrees(sql);
 			process.exit(0);
 		}
 
 		if (values["clean-up"]) {
-			const sql = createDatabeConnection({
-				host: values.pghost,
-			});
+			const sql = createDatabeConnection(databaseOptions);
 			await cleanUp(sql);
 			process.exit(0);
 		}
