@@ -13,7 +13,6 @@ export async function createTable(sql: postgres.Sql) {
 		const tableExists = await doesTableExist(sql, tempTreesTable);
 		spinner.text = `Checking if table ${tempTreesTable} exists`;
 		if (!tableExists) {
-			// console.info("Table does not exists");
 			await sql`
 		CREATE TABLE IF NOT EXISTS ${sql(tempTreesTable)} (
 			"gml_id" text,
