@@ -5,7 +5,7 @@ import { UserError } from "../errors.js";
 import ora from "ora";
 import { delay } from "../utils.js";
 
-export async function deleteTrees(sql: postgres.Sql) {
+export async function deleteTrees(sql: postgres.Sql, batchSize = 100) {
 	try {
 		const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();
 		const tableExists = await doesTableExist(sql, tempTreesTable);
@@ -74,7 +74,13 @@ WHERE gml_id IN (
 		await delay(1000);
 
 		if (!dryRun) {
-			await sql`DELETE FROM trees WHERE id IN ${sql(resultTrees.map((r) => r.id))}`;
+			const limit = batchSize; // adjust this value based on your needs
+			spinner.start(`Removing ${resultTrees.length} records from table trees`);
+			for (let i = 0; i < resultTrees.length; i += limit) {
+				const batch = resultTrees.slice(i, i + limit);
+				spinner.text = `Removing batch ${i + 1}-${i + 1 + limit}/${resultTrees.length} records from table trees`;
+				await sql`DELETE FROM trees WHERE id IN ${sql(batch.map((r) => r.id))}`;
+			}
 		}
 		spinner.succeed(`Removed ${resultTrees.length} records from table trees`);
 		spinner.succeed("Cleanup of trees data completed");
