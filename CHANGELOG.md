@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/compare/v1.2.0...v1.3.0) (2024-05-07)
+
+
+### Features
+
+* Delete in batches to prevent timeouts ([f59ee70](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/commit/f59ee706eb4fe7c69f47e1db4cb9735c3c44c389))
+
 # [1.2.0](https://github.com/technologiestiftung/giessdenkiez-de-tree-data/compare/v1.1.0...v1.2.0) (2024-05-06)
 
 
