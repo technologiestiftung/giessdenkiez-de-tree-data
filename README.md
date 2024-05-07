@@ -49,7 +49,7 @@ To make sure we have a consistent environment, we created a docker image with al
 docker build -t technologiestiftung/giessdenkiez-de-tree-data .
 ```
 
-This image will create a container where you can run an interactive shell session. It will not run any scripts. First copy or rename the `tree_data/sample.env` to `tree_data/.env` and populate it with the right variables. Then run the container in detached mode:
+This image will create a container where you can run an interactive shell session. It will not run any scripts. First copy or rename the `sample.env` to `.env` and populate it with the right variables. Then run the container in detached mode:
 
 ```bash
 docker run --name gdk-python-runner --detach \
@@ -73,7 +73,8 @@ For convinence see the [Makefile](./Makefile) for more commands.
 
 ### Data Processing with Node.js
 
-As outlined above we have to do several steps to process the data.
+As outlined above we have to do several steps to process the data. This runs on computer and not in the docker container.
+
 First install all dependencies:
 
 ```bash
