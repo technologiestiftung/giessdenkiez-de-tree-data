@@ -1,6 +1,6 @@
 {
 	"name": "@technologiestiftung/giessdenkiez-de-tree-data",
-	"version": "1.3.0",
+	"version": "1.4.0",
 	"type": "module",
 	"description": "![](https://img.shields.io/badge/Built%20with%20%E2%9D%A4%EF%B8%8F-at%20Technologiestiftung%20Berlin-blue)",
 	"main": "dist/index.js",
