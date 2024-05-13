@@ -41,7 +41,8 @@ PGDATABASE=
 
 ### Data Download with Python
 
-> [!WARNING] This will be removed and should be replaced with the Node.js script.
+> [!WARNING]
+> This will be removed and should be replaced with the Node.js script.
 
 To make sure we have a consistent environment, we created a docker image with all dependencies for the python scripts installed. We do not recommend running this on your host machine. To build the image, run:
 
