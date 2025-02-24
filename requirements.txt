@@ -2,7 +2,7 @@ owslib==0.23.0
 requests==2.25.1
 pandas==2.0.3
 geopandas==0.13.2
-Shapely==1.7.1
+Shapely==1.8.5.post1
 pytest==6.2.2
 pytest-cov==2.11.1
 psycopg2==2.8.4
