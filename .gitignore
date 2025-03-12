@@ -130,3 +130,5 @@ backup-and-restore/backup/*.dump
 .vscode
 .zed/settings.json
 tree_data/data_files/*.zip
+.envrc.production
+tree_data/data_files/*.qmd
