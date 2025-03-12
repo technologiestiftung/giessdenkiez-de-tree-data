@@ -1,7 +1,7 @@
 import postgres from "postgres";
-import { config } from "../config.js";
-import { doesTableExist } from "./utils.js";
-import { UserError } from "../errors.js";
+import { config } from "../config.ts";
+import { doesTableExist } from "./utils.ts";
+import { UserError } from "../errors.ts";
 import ora from "ora";
 
 export async function createTable(sql: postgres.Sql) {
@@ -30,13 +30,26 @@ export async function createTable(sql: postgres.Sql) {
 			"pflanzjahr" int4,
 			"standalter" text,
 			"stammumfg" text,
-			"baumhoehe" text,
+			"baumhoehe" float8,
 			"bezirk" text,
 			"eigentuemer" text,
 			"zusatz" text,
 			"kronedurch" text,
 			"type" text,
-			geom geometry(Geometry,4326))
+			"baumnr" text,
+			"objektnr" text,
+			"objektname" text,
+			"baumart_de" text,
+			"baumart_bo" text,
+			"gattung_bo" text,
+			"kronendurch" float8,
+			"kronendurc" float8,
+			"stammumfan" float8,
+			"eigentueme" text,
+			"gisid" text,
+			"pitid" text,
+			"comment" text,
+			"geom" geometry(Geometry,4326))
 
 			`;
 			spinner.succeed(`Table ${tempTreesTable} created`);

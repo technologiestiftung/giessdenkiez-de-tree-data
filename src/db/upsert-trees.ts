@@ -1,8 +1,8 @@
 import postgres from "postgres";
-import { UserError } from "../errors.js";
-import { config } from "../config.js";
+import { UserError } from "../errors.ts";
+import { config } from "../config.ts";
 import ora from "ora";
-import { doesTableExist } from "./utils.js";
+import { doesTableExist } from "./utils.ts";
 
 export async function upsertTrees(sql: postgres.Sql, batchSize = 1000) {
 	const spinner = ora("Starting upsert").start();
@@ -23,8 +23,8 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 1000) {
 				spinner.text = `Upserting ${offset + 1}-${offset + 1 + batchSize} of ${result[0].count} records`;
 
 				await sql`
-					INSERT INTO trees (gml_id, standortnr, kennzeich,  art_dtsch, art_bot, gattung_deutsch, gattung, strname, hausnr,
-							pflanzjahr, standalter, stammumfg, baumhoehe, bezirk, eigentuemer, zusatz, kronedurch, "type", geom)
+					INSERT INTO trees (id, standortnr, kennzeich, art_dtsch, art_bot, gattung_deutsch, gattung, strname, hausnr,
+							pflanzjahr, standalter, stammumfg, baumhoehe, bezirk, eigentuemer, zusatz, kronedurch, "type", geom, comment)
 							SELECT
 											gml_id,
 											standortnr,
@@ -44,10 +44,11 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 1000) {
 											zusatz,
 											kronedurch,
 											"type",
-											geom
+											geom,
+											comment
 							FROM ${sql(tempTreesTable)} AS temp_trees
 							LIMIT ${batchSize} OFFSET ${offset}
-							ON CONFLICT (gml_id)
+							ON CONFLICT (id)
 							DO UPDATE
 							SET
 											standortnr = excluded.standortnr,
@@ -67,7 +68,8 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 1000) {
 											zusatz = excluded.zusatz,
 											kronedurch = excluded.kronedurch,
 											"type" = excluded."type",
-											geom = excluded.geom;
+											geom = excluded.geom,
+											comment = excluded.comment;
 					`;
 			}
 		}

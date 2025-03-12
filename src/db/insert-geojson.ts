@@ -1,9 +1,9 @@
-import { FeatureCollection } from "geojson";
-import { TreeType } from "../common.js";
+import type { FeatureCollection } from "geojson";
+import type { TreeType } from "../common.ts";
 import postgres from "postgres";
-import { config } from "../config.js";
-import { doesTableExist } from "./utils.js";
-import { UserError } from "../errors.js";
+import { config } from "../config.ts";
+import { doesTableExist } from "./utils.ts";
+import { UserError } from "../errors.ts";
 import ora from "ora";
 
 export async function insertGeoJson(
@@ -70,6 +70,10 @@ export async function insertGeoJson(
 
 			const tree: Record<string, string | number | null> = {
 				...properties,
+				// manually parse the pflanzjahr to a number
+				pflanzjahr: isNaN(parseInt(properties["pflanzjahr"]))
+					? null
+					: parseInt(properties["pflanzjahr"]),
 				geom: geom[0].geom,
 				type: treeType ?? null,
 			};

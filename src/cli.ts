@@ -1,17 +1,17 @@
 // import ora from "ora";
-import { createDatabeConnection } from "./db.js";
-import { PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE } from "./env.js";
+import { createDatabeConnection } from "./db.ts";
+import { PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE } from "./env.ts";
 import { parseArgs } from "node:util";
-import { geojsonImporter } from "./geojson-import.js";
-import { ApplicationError, UserError } from "./errors.js";
-import { config, setUserConfig } from "./config.js";
-import { TreeType } from "./common.js";
-import { createTable } from "./db/create-table.js";
-import { insertGeoJson } from "./db/insert-geojson.js";
-import { deleteTrees } from "./db/delete-trees.js";
-import { upsertTrees } from "./db/upsert-trees.js";
-import { cleanUp } from "./db/clean-up.js";
-import { getWfsData } from "./get-wfs-data.js";
+import { geojsonImporter } from "./geojson-import.ts";
+import { ApplicationError, UserError } from "./errors.ts";
+import { config, setUserConfig } from "./config.ts";
+import type { TreeType } from "./common.ts";
+import { createTable } from "./db/create-table.ts";
+import { insertGeoJson } from "./db/insert-geojson.ts";
+import { deleteTrees } from "./db/delete-trees.ts";
+import { upsertTrees } from "./db/upsert-trees.ts";
+import { cleanUp } from "./db/clean-up.ts";
+import { getWfsData } from "./get-wfs-data.ts";
 // const spinner = ora("Loading unicorns").start();
 
 // const args = [
@@ -21,6 +21,7 @@ import { getWfsData } from "./get-wfs-data.js";
 // ];
 
 let treeType: TreeType | undefined = undefined;
+let comment: string | undefined = undefined;
 
 async function cli() {
 	try {
@@ -33,6 +34,7 @@ async function cli() {
 			options: {
 				"get-wfs-data": { type: "boolean" },
 				"create-temp-table": { type: "boolean", default: false, short: "c" },
+				comment: { type: "string", short: "m" },
 				"set-tree-type": { type: "string", short: "t" },
 				"upsert-trees": { type: "boolean", default: false, short: "u" },
 				"dry-run": { type: "boolean", default: false, short: "r" },
@@ -61,6 +63,7 @@ Options:
   -c, --create-temp-table  Create a new table ${temp_trees_table} and exit. Default is false.
   -i, --import-geojson     Specify the path to the GeoJSON file you want to import.
   -d --delete-trees        Delete all trees from the database that are not in the ${temp_trees_table}.
+  -m --comment             Specify the comment for the trees when inserted into the database.
   -u --upsert-trees        Upsert all trees from the ${temp_trees_table} into the database.
   -r, --dry-run            Perform a dry run. Default is false.
   -t --set-tree-type       Specify the type of tree during import.
@@ -134,6 +137,10 @@ Options:
 			password,
 		};
 
+		if (values["comment"]) {
+			comment = values["comment"];
+		}
+
 		if (values["get-wfs-data"]) {
 			await getWfsData();
 			process.exit(0);
@@ -161,6 +168,7 @@ Options:
 			const sql = createDatabeConnection(databaseOptions);
 			const geojson = await geojsonImporter({
 				filePath: values["import-geojson"],
+				comment,
 			});
 
 			await insertGeoJson(sql, geojson, {

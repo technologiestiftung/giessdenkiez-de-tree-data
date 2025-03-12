@@ -1,9 +1,9 @@
 import postgres from "postgres";
-import { config } from "../config.js";
-import { doesTableExist } from "./utils.js";
-import { UserError } from "../errors.js";
+import { config } from "../config.ts";
+import { doesTableExist } from "./utils.ts";
+import { UserError } from "../errors.ts";
 import ora from "ora";
-import { delay } from "../utils.js";
+import { delay } from "../utils.ts";
 
 export async function deleteTrees(sql: postgres.Sql, batchSize = 100) {
 	try {
@@ -19,9 +19,9 @@ export async function deleteTrees(sql: postgres.Sql, batchSize = 100) {
 		SELECT tree_id, count(1) FROM trees_watered
 		WHERE tree_id IN (
 			SELECT id FROM trees
-			WHERE gml_id IN (
-				SELECT trees.gml_id FROM trees
-				LEFT JOIN ${sql(tempTreesTable)} ON trees.gml_id = ${sql(tempTreesTable)}.gml_id
+			WHERE id IN (
+				SELECT trees.id FROM trees
+				LEFT JOIN ${sql(tempTreesTable)} ON trees.id = ${sql(tempTreesTable)}.gml_id
 				WHERE ${sql(tempTreesTable)}.gml_id IS NULL
 			)
 		) GROUP  by tree_id;`;
@@ -41,9 +41,9 @@ export async function deleteTrees(sql: postgres.Sql, batchSize = 100) {
 		SELECT tree_id, count(1) FROM trees_adopted
 WHERE tree_id IN (
 	SELECT id FROM trees
-	WHERE gml_id IN (
-		SELECT trees.gml_id FROM trees
-		LEFT JOIN ${sql(tempTreesTable)} ON trees.gml_id = ${sql(tempTreesTable)}.gml_id
+	WHERE id IN (
+		SELECT trees.id FROM trees
+		LEFT JOIN ${sql(tempTreesTable)} ON trees.id = ${sql(tempTreesTable)}.gml_id
 		WHERE ${sql(tempTreesTable)}.gml_id IS NULL
 	)
 ) GROUP  by tree_id;`;
@@ -65,9 +65,9 @@ WHERE tree_id IN (
 
 		const resultTrees = await sql<{ id: string }[]>`
 		SELECT id FROM trees
-WHERE gml_id IN (
-	SELECT trees.gml_id FROM trees
-	LEFT JOIN ${sql(tempTreesTable)} ON trees.gml_id = ${sql(tempTreesTable)}.gml_id
+WHERE id IN (
+	SELECT trees.id FROM trees
+	LEFT JOIN ${sql(tempTreesTable)} ON trees.id = ${sql(tempTreesTable)}.gml_id
 	WHERE ${sql(tempTreesTable)}.gml_id IS NULL
 );`;
 		spinner.text = `This will remove ${resultTrees.length} records from table trees`;
