@@ -17,13 +17,13 @@
 		"@technologiestiftung/prettier-config": "1.0.0",
 		"@technologiestiftung/semantic-release-config": "1.2.4",
 		"@types/geojson": "7946.0.14",
-		"@types/node": "20.12.7",
+		"@types/node": "22.13.10",
 		"globals": "15.0.0",
 		"postgres": "3.4.4",
 		"prettier": "3.2.5",
 		"semantic-release": "23.0.6",
 		"tsx": "4.7.2",
-		"typescript": "5.4.5"
+		"typescript": "5.8.2"
 	},
 	"dependencies": {
 		"ora": "8.0.1"
