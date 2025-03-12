@@ -1,0 +1,76 @@
+/*
+should have the reset before this
+https://assets.qawsed.site/css/reset.css
+*/
+
+:root {
+	/* CSS HSL */
+	--smoky-black: hsla(24, 14%, 7%, 1);
+	--cyclamen: hsla(341, 73%, 62%, 1);
+	--vista-blue: hsla(235, 44%, 50%, 1);
+	--baby-powder: hsl(0, 0%, 98%);
+	--jet: hsla(34, 7%, 19%, 1);
+
+	--background-color: var(--baby-powder);
+	--text-color: var(--smoky-black);
+	--text-color-light: hsl(from var(--text-color) h 0 99);
+	--dark-color: var(--jet);
+	--light-color: var(--baby-powder);
+	--highlight-color: var(--cyclamen);
+	--primary-color: var(--cyclamen);
+	--secondary-color: var(--vista-blue);
+	--code-background-color: hsl(60, 90%, 90%);
+
+	--link-color: hsl(from var(--primary-color) h s calc(l * 0.8));
+	--link-hover-color: var(--vista-blue);
+	--link-active-color: hsl(
+		from var(--primary-color) h calc(s * 1.2) calc(l * 0.8)
+	);
+	--link-visited-color: hsl(from var(--link-color) h s calc(l * 0.8));
+
+	/* sizes */
+	--s1: 8px;
+	--s2: 16px;
+	--s3: 32px;
+	--s4: 64px;
+	--s5: 128px;
+	--s6: 256px;
+	--s7: 512px;
+
+	--max-width: 70ch;
+	--s8: 1024px;
+	--s9: 2048px;
+	--s10: 4096px;
+}
+html,
+body {
+	height: 100%;
+}
+html {
+	font-size: 110%;
+}
+body {
+	/* or other fonts https://modernfontstacks.com/ */
+	font-family: Seravek, "Gill Sans Nova", Ubuntu, Calibri, "DejaVu Sans",
+		source-sans-pro, sans-serif;
+	font-weight: normal;
+	line-height: 1.5;
+	color: var(--text-color);
+	background-color: var(--background-color);
+	margin: 0;
+	padding: 0;
+	padding-left: var(--s1);
+	padding-right: var(--s1);
+	/* max-width: var(--max-width); */
+	max-width: 100%;
+	margin-left: auto;
+	margin-right: auto;
+}
+#root {
+	height: 100%;
+}
+#map {
+	width: 100%;
+	height: 100%;
+	background-color: #000;
+}
