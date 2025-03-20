@@ -8,11 +8,14 @@ import { delay } from "../utils.ts";
 export async function deleteTrees(sql: postgres.Sql, batchSize = 100) {
 	try {
 		const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();
+
 		const tableExists = await doesTableExist(sql, tempTreesTable);
 		if (!tableExists) {
 			throw new UserError(`Table ${tempTreesTable} does not exists`);
 		}
-		const spinner = ora("Starting cleanup of trees_watered data").start();
+		const spinner = ora(
+			`Starting cleanup of trees_watered data${dryRun ? " (dry-run)" : ""}`,
+		).start();
 		await delay(1000);
 
 		const resultTreesWatered = await sql<{ tree_id: string; count: string }[]>`
@@ -25,17 +28,17 @@ export async function deleteTrees(sql: postgres.Sql, batchSize = 100) {
 				WHERE ${sql(tempTreesTable)}.gml_id IS NULL
 			)
 		) GROUP  by tree_id;`;
-		spinner.text = `This will remove ${resultTreesWatered.length} records from table trees_watered`;
+		spinner.text = `This ${dryRun ? "would" : "will"} remove ${resultTreesWatered.length} records from table trees_watered`;
 		await delay(1000);
 
 		if (!dryRun) {
 			await sql`DELETE FROM trees_watered WHERE tree_id IN ${sql(resultTreesWatered.map((r) => r.tree_id))}`;
 		}
 		spinner.succeed(
-			`Removed ${resultTreesWatered.length} records from table trees_watered`,
+			`${dryRun ? "Would remove" : "Removed"} ${resultTreesWatered.length} records from table trees_watered${dryRun ? " (dry-run)" : ""}`,
 		);
 
-		spinner.text = "Starting cleanup of trees_adopted data";
+		spinner.text = `Starting cleanup of trees_adopted data${dryRun ? " (dry-run)" : ""}`;
 
 		const resultTreesAdopted = await sql<{ tree_id: string; count: string }[]>`
 		SELECT tree_id, count(1) FROM trees_adopted
@@ -48,7 +51,7 @@ WHERE tree_id IN (
 	)
 ) GROUP  by tree_id;`;
 
-		spinner.text = `This will remove ${resultTreesAdopted.length} records from table trees_adopted`;
+		spinner.text = `This ${dryRun ? "would" : "will"} remove ${resultTreesAdopted.length} records from table trees_adopted`;
 		await delay(1000);
 
 		if (!dryRun) {
@@ -57,10 +60,10 @@ WHERE tree_id IN (
 			)}`;
 		}
 		spinner.succeed(
-			`Removed ${resultTreesAdopted.length} records from table trees_adopted`,
+			`${dryRun ? "Would remove" : "Removed"} ${resultTreesAdopted.length} records from table trees_adopted${dryRun ? " (dry-run)" : ""}`,
 		);
 
-		spinner.text = "Starting cleanup of trees data";
+		spinner.text = `Starting cleanup of trees data${dryRun ? " (dry-run)" : ""}`;
 		await delay(1000);
 
 		const resultTrees = await sql<{ id: string }[]>`
@@ -70,11 +73,11 @@ WHERE id IN (
 	LEFT JOIN ${sql(tempTreesTable)} ON trees.id = ${sql(tempTreesTable)}.gml_id
 	WHERE ${sql(tempTreesTable)}.gml_id IS NULL
 );`;
-		spinner.text = `This will remove ${resultTrees.length} records from table trees`;
+		spinner.text = `This ${dryRun ? "would" : "will"} remove ${resultTrees.length} records from table trees`;
 		await delay(1000);
 
 		if (!dryRun) {
-			const limit = batchSize; // adjust this value based on your needs
+			const limit = batchSize;
 			spinner.start(`Removing ${resultTrees.length} records from table trees`);
 			for (let i = 0; i < resultTrees.length; i += limit) {
 				const batch = resultTrees.slice(i, i + limit);
@@ -82,8 +85,12 @@ WHERE id IN (
 				await sql`DELETE FROM trees WHERE id IN ${sql(batch.map((r) => r.id))}`;
 			}
 		}
-		spinner.succeed(`Removed ${resultTrees.length} records from table trees`);
-		spinner.succeed("Cleanup of trees data completed");
+		spinner.succeed(
+			`${dryRun ? "Would remove" : "Removed"} ${resultTrees.length} records from table trees${dryRun ? " (dry-run)" : ""}`,
+		);
+		spinner.succeed(
+			`${dryRun ? "Would complete" : "Completed"} cleanup of trees data${dryRun ? " (dry-run)" : ""}`,
+		);
 	} catch (error: unknown) {
 		if (error instanceof UserError) {
 			await sql.end();
