@@ -166,6 +166,16 @@ To generate some test data you can run this script:
 npm run test:generate:geojson -- --input-file ./tree_data/data_files/s_wfs_baumbestand_2024-4-19.geo.json --output-file ./tests/data/test.geo.json --count 10
 ```
 
+## Convinence Stuff
+
+### fish shell completions.
+
+In your fish shell run this command to enable completions:
+
+```fish
+source completions/setup_cli_completions.fish
+```
+
 ## Contributors ✨
 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
