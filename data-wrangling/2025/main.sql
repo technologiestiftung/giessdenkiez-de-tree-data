@@ -19,18 +19,12 @@ WHERE gml_id IS NULL
 ALTER TABLE temp_trees
 ALTER COLUMN baumhoehe TYPE text USING baumhoehe::text;
 -- kronendurchmesser
--- first copy all values from temp_trees.kronendurc to temp_trees.kronendurch
-SELECT count(1)
-from temp_trees
-WHERE kronendurc is not null;
+-- copy all values from temp_trees.kronendurc to temp_trees.kronendurch
 UPDATE temp_trees
 SET kronendurch = kronendurc
 WHERE kronendurch IS NULL
 	AND kronendurc IS NOT NULL;
 -- now we copy all the values to the text row
-SELECT count(1)
-from temp_trees
-where kronedurch is not null;
 UPDATE temp_trees
 SET kronedurch = kronendurch::text
 WHERE kronedurch IS NULL
@@ -46,9 +40,6 @@ SET gattung = gattung_bo
 WHERE gattung IS NULL
 	AND gattung_bo IS NOT NULL;
 -- stammumfang
-SELECT count(1)
-from temp_trees
-where stammumfg is not null;
 UPDATE temp_trees
 SET stammumfg = stammumfan::text
 WHERE stammumfg IS NULL
