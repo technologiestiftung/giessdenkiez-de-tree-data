@@ -1,29 +1,59 @@
 import { useEffect, useRef, useState } from "react";
 import "./index.css";
 import "mapbox-gl/dist/mapbox-gl.css";
-import mapboxgl, { GeoJSONSource, Map } from "mapbox-gl";
-import { createClient } from "@supabase/supabase-js";
-import { useGeojson } from "./hooks/use-geojson";
+import mapboxgl, { Map } from "mapbox-gl";
 
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_ACCESS_TOKEN;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-const supabaseClient = createClient("http://localhost:54321", anonKey);
+
+type Feature = GeoJSON.Feature<GeoJSON.LineString>;
+type FeatureCollection = GeoJSON.FeatureCollection<GeoJSON.LineString>;
+
+// Helper function to create point features from line endpoints
+function createEndpointFeatures(
+	lineFeatures: Feature[],
+	isStart: boolean,
+): GeoJSON.FeatureCollection {
+	return {
+		type: "FeatureCollection",
+		features: lineFeatures.map((feature) => ({
+			type: "Feature",
+			properties: feature.properties,
+			geometry: {
+				type: "Point",
+				coordinates: isStart
+					? feature.geometry.coordinates[0]
+					: feature.geometry.coordinates[
+							feature.geometry.coordinates.length - 1
+						],
+			},
+		})),
+	};
+}
+
+// Constants for colors
+const COLORS = {
+	STREET: "#ff6347",
+	ANLAGE: "#00ff66",
+	START: "#000000",
+	END: "#ffffff",
+} as const;
 
 function App() {
-	// const { geojson, setGeojson, initGeojson } = useGeojson(supabaseClient);
-
 	const map = useRef<Map | null>(null);
 	const [isGeolocating, setIsGeolocating] = useState<boolean>(false);
-	const [range, setRange] = useState<number>(100);
 	const [currentLoction, setcurrentLoction] = useState<GeoJSON.Point>();
 	const [currentFeature, setcurrentFeature] =
 		useState<mapboxgl.GeoJSONFeature | null>(null);
-	const [show2025Trees, setShow2025Trees] = useState(true);
-	const [show2024Trees, setShow2024Trees] = useState(true);
-	// const [userAdoptions, setUserAdoptions] = useState<Adoption[]>([]);
-	// const [userWaterings, setUserWaterings] = useState<Watering[]>([]);
+	const [showStreetLines, setShowStreetLines] = useState(true);
+	const [showAnlageLines, setShowAnlageLines] = useState(true);
+	const [error, setError] = useState<string | null>(null);
 
 	useEffect(() => {
+		if (!mapboxgl.accessToken) {
+			setError("Mapbox token not found!");
+			return;
+		}
+
 		map.current = new mapboxgl.Map({
 			container: "map",
 			style: "mapbox://styles/mapbox/dark-v10",
@@ -32,130 +62,238 @@ function App() {
 		});
 		if (!map || !map.current) return;
 
-		let selectedTreeId: string | null = null;
-
 		map.current.on("load", async () => {
-			// Add trees source and layer
-			if (!map.current?.getSource("temp_trees")) {
-				map.current!.addSource("temp_trees", {
-					type: "vector",
-					url: `mapbox://fmoronzirfas.gdk-trees-2025`,
+			try {
+				console.log("Loading GeoJSON files...");
+				// Load street lines
+				const streetResponse = await fetch(
+					"/dupes_gruen_street_line_converted.geojson",
+				);
+				if (!streetResponse.ok)
+					throw new Error(
+						`Failed to load street lines: ${streetResponse.statusText}`,
+					);
+				const streetData = await streetResponse.json();
+				console.log(
+					"Loaded street lines:",
+					streetData.features?.length || 0,
+					"features",
+				);
+
+				// Load anlage lines
+				const anlageResponse = await fetch(
+					"/dupes_gruen_anlage_line_converted.geojson",
+				);
+				if (!anlageResponse.ok)
+					throw new Error(
+						`Failed to load anlage lines: ${anlageResponse.statusText}`,
+					);
+				const anlageData = await anlageResponse.json();
+				console.log(
+					"Loaded anlage lines:",
+					anlageData.features?.length || 0,
+					"features",
+				);
+
+				if (!map.current) return;
+
+				// Add sources for lines
+				map.current.addSource("street_lines", {
+					type: "geojson",
+					data: streetData,
 				});
-				map.current!.addLayer({
-					id: "temp_trees",
-					type: "circle",
-					source: "temp_trees",
-					"source-layer": "trees",
+
+				map.current.addSource("anlage_lines", {
+					type: "geojson",
+					data: anlageData,
+				});
+
+				// Add sources for start/end points
+				map.current.addSource("street_starts", {
+					type: "geojson",
+					data: createEndpointFeatures(streetData.features, true),
+				});
+
+				map.current.addSource("street_ends", {
+					type: "geojson",
+					data: createEndpointFeatures(streetData.features, false),
+				});
+
+				map.current.addSource("anlage_starts", {
+					type: "geojson",
+					data: createEndpointFeatures(anlageData.features, true),
+				});
+
+				map.current.addSource("anlage_ends", {
+					type: "geojson",
+					data: createEndpointFeatures(anlageData.features, false),
+				});
+
+				// Add line layers
+				map.current.addLayer({
+					id: "street_lines",
+					type: "line",
+					source: "street_lines",
 					paint: {
-						"circle-pitch-alignment": "map",
-						"circle-radius": 5,
-						"circle-opacity": 0.3,
-						"circle-stroke-color": "#000000",
-						"circle-color": "#ff6347",
-						"circle-stroke-width": 2,
+						"line-color": "#ff6347",
+						"line-width": 2,
+						"line-opacity": 0.8,
 					},
 				});
-			}
 
-			if (!map.current?.getSource("trees")) {
-				map.current!.addSource("trees", {
-					type: "vector",
-					url: `mapbox://fmoronzirfas.gdk-trees-2024`,
-				});
-				map.current!.addLayer({
-					id: "trees",
-					type: "circle",
-					source: "trees",
-					"source-layer": "trees",
+				map.current.addLayer({
+					id: "anlage_lines",
+					type: "line",
+					source: "anlage_lines",
 					paint: {
-						"circle-pitch-alignment": "map",
-						"circle-radius": 5,
-						"circle-opacity": 0.3,
-						"circle-stroke-color": "#000000",
-						"circle-color": "#00ff66",
-						"circle-stroke-width": 2,
+						"line-color": "#00ff66",
+						"line-width": 2,
+						"line-opacity": 0.8,
 					},
 				});
-			}
 
-			// Set initial visibility
-			map.current!.setLayoutProperty(
-				"temp_trees",
-				"visibility",
-				show2025Trees ? "visible" : "none",
-			);
-			map.current!.setLayoutProperty(
-				"trees",
-				"visibility",
-				show2024Trees ? "visible" : "none",
-			);
-
-			// Add geolocate control
-			const geolocate = new mapboxgl.GeolocateControl({
-				positionOptions: {
-					enableHighAccuracy: true,
-				},
-				trackUserLocation: true,
-				showUserHeading: true,
-			});
-			map.current!.addControl(geolocate);
-			geolocate.on("geolocate", function locateUser(e: any | undefined) {
-				if (!e) return;
-				console.log(e);
-				setcurrentLoction({
-					type: "Point",
-					coordinates: [e.coords.longitude, e.coords.latitude],
+				// Add start point layers (black circles)
+				map.current.addLayer({
+					id: "street_starts",
+					type: "circle",
+					source: "street_starts",
+					paint: {
+						"circle-radius": 4,
+						"circle-color": "#000000",
+						"circle-stroke-width": 1,
+						"circle-stroke-color": "#ffffff",
+					},
 				});
-			});
-			geolocate.on("trackuserlocationstart", () => {
-				setIsGeolocating(true);
-			});
-			geolocate.on("trackuserlocationend", () => {
-				setIsGeolocating(false);
-				setcurrentLoction(undefined);
-			});
+
+				map.current.addLayer({
+					id: "anlage_starts",
+					type: "circle",
+					source: "anlage_starts",
+					paint: {
+						"circle-radius": 4,
+						"circle-color": "#000000",
+						"circle-stroke-width": 1,
+						"circle-stroke-color": "#ffffff",
+					},
+				});
+
+				// Add end point layers (white circles)
+				map.current.addLayer({
+					id: "street_ends",
+					type: "circle",
+					source: "street_ends",
+					paint: {
+						"circle-radius": 4,
+						"circle-color": "#ffffff",
+						"circle-stroke-width": 1,
+						"circle-stroke-color": "#000000",
+					},
+				});
+
+				map.current.addLayer({
+					id: "anlage_ends",
+					type: "circle",
+					source: "anlage_ends",
+					paint: {
+						"circle-radius": 4,
+						"circle-color": "#ffffff",
+						"circle-stroke-width": 1,
+						"circle-stroke-color": "#000000",
+					},
+				});
+
+				// Set initial visibility
+				const layers = [
+					"street_lines",
+					"street_starts",
+					"street_ends",
+					"anlage_lines",
+					"anlage_starts",
+					"anlage_ends",
+				];
+				layers.forEach((layer) => {
+					map.current?.setLayoutProperty(
+						layer,
+						"visibility",
+						layer.includes("street")
+							? showStreetLines
+								? "visible"
+								: "none"
+							: showAnlageLines
+								? "visible"
+								: "none",
+					);
+				});
+
+				console.log("Map layers added successfully");
+
+				// Add geolocate control
+				const geolocate = new mapboxgl.GeolocateControl({
+					positionOptions: {
+						enableHighAccuracy: true,
+					},
+					trackUserLocation: true,
+					showUserHeading: true,
+				});
+				map.current.addControl(geolocate);
+				geolocate.on("geolocate", function locateUser(e: any | undefined) {
+					if (!e) return;
+					setcurrentLoction({
+						type: "Point",
+						coordinates: [e.coords.longitude, e.coords.latitude],
+					});
+				});
+				geolocate.on("trackuserlocationstart", () => {
+					setIsGeolocating(true);
+				});
+				geolocate.on("trackuserlocationend", () => {
+					setIsGeolocating(false);
+					setcurrentLoction(undefined);
+				});
+			} catch (err) {
+				console.error("Error loading GeoJSON:", err);
+				setError(
+					err instanceof Error ? err.message : "Failed to load map data",
+				);
+			}
 		});
 
-		map.current.on("click", "trees", function (e) {
+		map.current.on("click", ["street_lines", "anlage_lines"], function (e) {
 			if (!e.features) return;
 			const { features } = e;
 			setcurrentFeature(features[0]);
-
-			if (selectedTreeId) {
-				map.current?.setFeatureState(
-					{
-						source: "trees",
-						id: selectedTreeId,
-					},
-					{ selected: false },
-				);
-			}
-			if (e.features[0].id) {
-				selectedTreeId = e.features[0].id as string;
-
-				map.current?.setFeatureState(
-					{
-						source: "trees",
-						id: e.features[0].id,
-					},
-					{ selected: true },
-				);
-			}
 		});
 
 		return () => {
-			if (map.current?.getLayer("temp_trees")) {
-				map.current.removeLayer("temp_trees");
-			}
-			if (map.current?.getLayer("trees")) {
-				map.current.removeLayer("trees");
-			}
-			if (map.current?.getSource("temp_trees")) {
-				map.current.removeSource("temp_trees");
-			}
-			if (map.current?.getSource("trees")) {
-				map.current.removeSource("trees");
-			}
+			const layers = [
+				"street_lines",
+				"street_starts",
+				"street_ends",
+				"anlage_lines",
+				"anlage_starts",
+				"anlage_ends",
+			];
+			const sources = [
+				"street_lines",
+				"street_starts",
+				"street_ends",
+				"anlage_lines",
+				"anlage_starts",
+				"anlage_ends",
+			];
+
+			layers.forEach((layer) => {
+				if (map.current?.getLayer(layer)) {
+					map.current.removeLayer(layer);
+				}
+			});
+
+			sources.forEach((source) => {
+				if (map.current?.getSource(source)) {
+					map.current.removeSource(source);
+				}
+			});
+
 			map.current?.remove();
 		};
 	}, []);
@@ -164,39 +302,144 @@ function App() {
 	useEffect(() => {
 		if (!map.current?.isStyleLoaded()) return;
 
-		map.current.setLayoutProperty(
-			"temp_trees",
-			"visibility",
-			show2025Trees ? "visible" : "none",
-		);
-		map.current.setLayoutProperty(
-			"trees",
-			"visibility",
-			show2024Trees ? "visible" : "none",
-		);
-	}, [show2025Trees, show2024Trees]);
+		const streetLayers = ["street_lines", "street_starts", "street_ends"];
+		const anlageLayers = ["anlage_lines", "anlage_starts", "anlage_ends"];
+
+		streetLayers.forEach((layer) => {
+			map.current?.setLayoutProperty(
+				layer,
+				"visibility",
+				showStreetLines ? "visible" : "none",
+			);
+		});
+
+		anlageLayers.forEach((layer) => {
+			map.current?.setLayoutProperty(
+				layer,
+				"visibility",
+				showAnlageLines ? "visible" : "none",
+			);
+		});
+	}, [showStreetLines, showAnlageLines]);
 
 	return (
 		<>
 			<div className="controls">
-				<label>
-					<input
-						type="checkbox"
-						checked={show2025Trees}
-						onChange={(e) => setShow2025Trees(e.target.checked)}
-					/>
-					2025 Trees
-				</label>
-				<label>
-					<input
-						type="checkbox"
-						checked={show2024Trees}
-						onChange={(e) => setShow2024Trees(e.target.checked)}
-					/>
-					2024 Trees
-				</label>
+				<div className="legend">
+					<h3>Legend</h3>
+					<div className="legend-section">
+						<h4>Lines</h4>
+						<div className="legend-item">
+							<span
+								className="color-box"
+								style={{ backgroundColor: COLORS.STREET }}
+							></span>
+							<label>
+								<input
+									type="checkbox"
+									checked={showStreetLines}
+									onChange={(e) => setShowStreetLines(e.target.checked)}
+								/>
+								Street Lines
+							</label>
+						</div>
+						<div className="legend-item">
+							<span
+								className="color-box"
+								style={{ backgroundColor: COLORS.ANLAGE }}
+							></span>
+							<label>
+								<input
+									type="checkbox"
+									checked={showAnlageLines}
+									onChange={(e) => setShowAnlageLines(e.target.checked)}
+								/>
+								Anlage Lines
+							</label>
+						</div>
+					</div>
+					<div className="legend-section">
+						<h4>Endpoints</h4>
+						<div className="legend-item">
+							<span
+								className="circle-box"
+								style={{
+									backgroundColor: COLORS.START,
+									border: `1px solid ${COLORS.END}`,
+								}}
+							></span>
+							<span>Start (Grün Berlin)</span>
+						</div>
+						<div className="legend-item">
+							<span
+								className="circle-box"
+								style={{
+									backgroundColor: COLORS.END,
+									border: `1px solid ${COLORS.START}`,
+								}}
+							></span>
+							<span>End (Street/Anlage Dataset)</span>
+						</div>
+					</div>
+				</div>
 			</div>
 			<div id="map"></div>
+			<style>{`
+				.controls {
+					position: absolute;
+					top: 10px;
+					right: 10px;
+					background: white;
+					padding: 10px;
+					border-radius: 4px;
+					box-shadow: 0 0 10px rgba(0,0,0,0.1);
+					z-index: 1;
+					min-width: 200px;
+				}
+				.legend {
+					font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+				}
+				.legend h3 {
+					margin: 0 0 10px 0;
+					font-size: 16px;
+				}
+				.legend h4 {
+					margin: 10px 0 5px 0;
+					font-size: 14px;
+					color: #666;
+				}
+				.legend-section {
+					margin-bottom: 15px;
+				}
+				.legend-item {
+					display: flex;
+					align-items: center;
+					margin: 5px 0;
+					gap: 8px;
+				}
+				.color-box {
+					width: 20px;
+					height: 3px;
+					display: inline-block;
+					margin-right: 5px;
+				}
+				.circle-box {
+					width: 12px;
+					height: 12px;
+					display: inline-block;
+					border-radius: 50%;
+					margin-right: 5px;
+				}
+				label {
+					display: flex;
+					align-items: center;
+					gap: 5px;
+					cursor: pointer;
+				}
+				input[type="checkbox"] {
+					margin: 0;
+				}
+			`}</style>
 		</>
 	);
 }
