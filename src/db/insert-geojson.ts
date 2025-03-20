@@ -64,9 +64,9 @@ export async function insertGeoJson(
 			}
 
 			const geom =
-				await sql`SELECT ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(
+				await sql`SELECT ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(
 					feature.geometry,
-				)}), 25833), 4326) as geom`;
+				)}), 4326) as geom`;
 
 			const tree: Record<string, string | number | null> = {
 				...properties,
