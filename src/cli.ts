@@ -1,9 +1,10 @@
-// import ora from "ora";
+#!/usr/bin/env node
+
 import { createDatabeConnection } from "./db.ts";
 import { PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE } from "./env.ts";
 import { parseArgs } from "node:util";
 import { geojsonImporter } from "./geojson-import.ts";
-import { ApplicationError, UserError } from "./errors.ts";
+import { UserError } from "./errors.ts";
 import { config, setUserConfig } from "./config.ts";
 import type { TreeType } from "./common.ts";
 import { createTable } from "./db/create-table.ts";
@@ -34,6 +35,11 @@ async function cli() {
 			options: {
 				"get-wfs-data": { type: "boolean" },
 				"create-temp-table": { type: "boolean", default: false, short: "c" },
+				"temp-trees-tablename": {
+					type: "string",
+					default: "temp_trees",
+					short: "n",
+				},
 				comment: { type: "string", short: "m" },
 				"set-tree-type": { type: "string", short: "t" },
 				"upsert-trees": { type: "boolean", default: false, short: "u" },
@@ -50,8 +56,10 @@ async function cli() {
 			},
 			tokens: true,
 		});
-
-		setUserConfig({ "dry-run": values["dry-run"] });
+		setUserConfig({
+			"dry-run": values["dry-run"],
+			"temp-trees-table": values["temp-trees-tablename"],
+		});
 
 		const { "temp-trees-table": temp_trees_table } = config();
 
@@ -59,33 +67,34 @@ async function cli() {
 			// eslint-disable-next-line no-console
 			console.info(`Usage: command [options]
 Options:
-  -h, --help               Output usage information and exit.
-  -c, --create-temp-table  Create a new table ${temp_trees_table} and exit. Default is false.
-  -i, --import-geojson     Specify the path to the GeoJSON file you want to import.
-  -d --delete-trees        Delete all trees from the database that are not in the ${temp_trees_table}.
-  -m --comment             Specify the comment for the trees when inserted into the database.
-  -u --upsert-trees        Upsert all trees from the ${temp_trees_table} into the database.
-  -r, --dry-run            Perform a dry run. Default is false.
-  -t --set-tree-type       Specify the type of tree during import.
-                           Can be "anlage" or "strasse". Default is null.
-      --get-wfs-data       Make a webreqwuets to the WFS server and save the data to a file.
+  -h, --help                Output usage information and exit.
+  -c, --create-temp-table   Create a new table ${temp_trees_table} and exit. Default is false.
+  -i, --import-geojson      Specify the path to the GeoJSON file you want to import.
+  -d --delete-trees         Delete all trees from the database that are not in the ${temp_trees_table}.
+  -m --comment              Specify the comment for the trees when inserted into the database.
+  -u --upsert-trees         Upsert all trees from the ${temp_trees_table} into the database.
+  -r, --dry-run             Perform a dry run. Default is false.
+  -t --set-tree-type        Specify the type of tree during import.
+  -n --temp-trees-tablename Specify the name of the temporary trees table. Default is "temp_trees".
+                            Can be "anlage" or "strasse". Default is null.
+      --get-wfs-data        Make a webreqwuets to the WFS server and save the data to a file.
 
-      --clean-up           Removes all temp tables.
+      --clean-up            Removes all temp tables.
 
-      --pghost             Specify the PostgreSQL host.
-                           Default is the value of the PGHOST environment variable.
+      --pghost              Specify the PostgreSQL host.
+                            Default is the value of the PGHOST environment variable.
 
-      --pgport             Specify the PostgreSQL port.
-                           Default is the value of the PGPORT environment variable.
+      --pgport              Specify the PostgreSQL port.
+                            Default is the value of the PGPORT environment variable.
 
-      --pguser             Specify the PostgreSQL user.
-                           Default is the value of the PGUSER environment variable.
+      --pguser              Specify the PostgreSQL user.
+                            Default is the value of the PGUSER environment variable.
 
-      --pgpassword         Specify the PostgreSQL password.
-                           Default is the value of the PGPASSWORD environment variable.
+      --pgpassword          Specify the PostgreSQL password.
+                            Default is the value of the PGPASSWORD environment variable.
 
-      --pgdatabase         Specify the PostgreSQL database.
-                           Default is the value of the PGDATABASE environment variable.
+      --pgdatabase          Specify the PostgreSQL database.
+                            Default is the value of the PGDATABASE environment variable.
 `);
 			process.exit(0);
 		}
