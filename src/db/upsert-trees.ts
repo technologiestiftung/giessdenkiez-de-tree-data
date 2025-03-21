@@ -4,7 +4,7 @@ import { config } from "../config.ts";
 import ora from "ora";
 import { doesTableExist } from "./utils.ts";
 
-export async function upsertTrees(sql: postgres.Sql, batchSize = 1000) {
+export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 	const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();
 	const spinner = ora(`Starting upsert${dryRun ? " (dry-run)" : ""}`).start();
 
@@ -62,6 +62,9 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 1000) {
 				FROM ${sql(tempTreesTable)}
 				ORDER BY gml_id`;
 
+			// Set transaction isolation level to prevent deadlocks
+			await sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`;
+
 			const totalBatches = Math.ceil(allIds.length / batchSize);
 			console.log(`Found ${allIds.length} IDs (${totalBatches} batches)`);
 
@@ -89,6 +92,7 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 1000) {
 						WITH batch AS (
 							SELECT * FROM ${sql(tempTreesTable)}
 							WHERE gml_id = ANY(${idBatch})
+							FOR UPDATE
 						),
 						inserted AS (
 							INSERT INTO trees (
