@@ -1,0 +1,7 @@
+{
+	"recommendations": [
+		"mtxr.sqltools-driver-pg",
+		"mtxr.sqltools",
+		"esbenp.prettier-vscode"
+	]
+}

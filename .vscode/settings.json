@@ -1,0 +1,15 @@
+{
+	"sqltools.connections": [
+		{
+			"previewLimit": 50,
+			"server": "localhost",
+			"port": 54322,
+			"driver": "PostgreSQL",
+			"name": "supabase-gdk-local",
+			"group": "giessdenkiez",
+			"database": "postgres",
+			"username": "postgres",
+			"password": "postgres"
+		}
+	]
+}
