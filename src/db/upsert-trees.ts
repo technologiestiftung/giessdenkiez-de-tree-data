@@ -15,6 +15,19 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 			throw new UserError(`Table ${tempTreesTable} does not exists`);
 		}
 
+		// Check if processed column exists, if not add it
+		const hasProcessedColumn = await sql`
+			SELECT column_name
+			FROM information_schema.columns
+			WHERE table_name = ${tempTreesTable}
+			AND column_name = 'processed'`;
+
+		if (hasProcessedColumn.length === 0) {
+			spinner.text = "Adding processed column...";
+			await sql`ALTER TABLE ${sql(tempTreesTable)} ADD COLUMN processed boolean DEFAULT false`;
+			spinner.succeed("Added processed column");
+		}
+
 		// Run stats query first
 		spinner.text = "Calculating stats...";
 		const stats = await sql`
@@ -27,6 +40,7 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 					COUNT(1) as count
 			FROM ${sql(tempTreesTable)} temp
 			LEFT JOIN trees ON trees.id = temp.gml_id
+			WHERE temp.processed = false
 			GROUP BY
 					CASE
 							WHEN trees.id IS NULL THEN 'insert'
@@ -60,6 +74,7 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 			const allIds = await sql`
 				SELECT gml_id
 				FROM ${sql(tempTreesTable)}
+				WHERE processed = false
 				ORDER BY gml_id`;
 
 			// Set transaction isolation level to prevent deadlocks
@@ -81,10 +96,10 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 				const idBatch = allIds.slice(i, i + batchSize).map((r) => r.gml_id);
 
 				const currentCount = i + 1;
-				const endCount = Math.min(i + batchSize, total);
-				const percentage = Math.round((currentCount / total) * 100);
+				const endCount = Math.min(i + batchSize, allIds.length);
+				const percentage = Math.round((currentCount / allIds.length) * 100);
 				console.log(
-					`Batch ${batchNumber}/${totalBatches}: ${currentCount}-${endCount}/${total} (${percentage}%)`,
+					`Batch ${batchNumber}/${totalBatches}: ${currentCount}-${endCount}/${allIds.length} (${percentage}%)`,
 				);
 
 				try {
@@ -92,6 +107,7 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 						WITH batch AS (
 							SELECT * FROM ${sql(tempTreesTable)}
 							WHERE gml_id = ANY(${idBatch})
+							AND processed = false
 							FOR UPDATE
 						),
 						inserted AS (
@@ -178,12 +194,17 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 								geom = excluded.geom
 							RETURNING id
 						)
-						SELECT COUNT(*) as affected FROM inserted`;
+						UPDATE ${sql(tempTreesTable)} temp
+						SET processed = true
+						FROM inserted
+						WHERE temp.gml_id = inserted.id
+						RETURNING temp.gml_id`;
 
-					processedCount = Number(processedCount) + Number(result[0].affected);
+					const affectedCount = result.length;
+					processedCount = Number(processedCount) + affectedCount;
 					const progressPercent = Math.round((processedCount / total) * 100);
 					console.log(
-						`  ✓ Affected rows: ${result[0].affected} (Total: ${processedCount}/${total} - ${progressPercent}%)`,
+						`  ✓ Affected rows: ${affectedCount} (Total: ${processedCount}/${total} - ${progressPercent}%)`,
 					);
 				} catch (err: unknown) {
 					console.error("Error in batch:", err);

@@ -49,6 +49,7 @@ export async function createTable(sql: postgres.Sql) {
 			"gisid" text,
 			"pitid" text,
 			"comment" text,
+			"processed" boolean DEFAULT false,
 			"geom" geometry(Geometry,4326))
 
 			`;
