@@ -13,6 +13,7 @@ import { deleteTrees } from "./db/delete-trees.ts";
 import { upsertTrees } from "./db/upsert-trees.ts";
 import { cleanUp } from "./db/clean-up.ts";
 import { getWfsData } from "./get-wfs-data.ts";
+import { testConnection } from "./db/utils.ts";
 // const spinner = ora("Loading unicorns").start();
 
 // const args = [
@@ -48,6 +49,7 @@ async function cli() {
 				help: { type: "boolean", default: false, short: "h" },
 				"import-geojson": { type: "string", short: "i" },
 				"clean-up": { type: "boolean" },
+				"test-connection": { type: "boolean", default: false },
 				pghost: { type: "string", default: PGHOST },
 				pgport: { type: "string", default: PGPORT },
 				pguser: { type: "string", default: PGUSER },
@@ -78,7 +80,7 @@ Options:
   -n --temp-trees-tablename Specify the name of the temporary trees table. Default is "temp_trees".
                             Can be "anlage" or "strasse". Default is null.
       --get-wfs-data        Make a webreqwuets to the WFS server and save the data to a file.
-
+      --test-connection     Test database connection and print PostgreSQL version.
       --clean-up            Removes all temp tables.
 
       --pghost              Specify the PostgreSQL host.
@@ -195,6 +197,23 @@ Options:
 		if (values["upsert-trees"]) {
 			const sql = createDatabeConnection(databaseOptions);
 			await upsertTrees(sql);
+			process.exit(0);
+		}
+
+		if (values["test-connection"]) {
+			if (!pgport || !pgdatabase || !pghost || !pgpassword || !pguser) {
+				throw new UserError("Missing required database connection parameters");
+			}
+			console.log("Database connection parameters:");
+			console.log(`Host: ${pghost}`);
+			console.log(`User: ${pguser}`);
+			console.log(`Database: ${pgdatabase}`);
+			console.log(`Port: ${pgport}`);
+			console.log(`Password: ${"*".repeat(pgpassword.length)}`);
+
+			const sql = createDatabeConnection(databaseOptions);
+			const version = await testConnection(sql);
+			console.log(`PostgreSQL version: ${version}`);
 			process.exit(0);
 		}
 
