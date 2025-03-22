@@ -153,7 +153,7 @@ In Gieß den Kiez it is visible which trees are maintained by Berlin's street an
 
 1. Extract only the FIS-Broker-ID'S (gml_ids) from the Excel sheet to a csv file
 2. Create a new table with this ID's in the database: `CREATE TABLE caretaker_ids(id VARCHAR NOT NULL)`
-3. Import ID’s from CSV-Table into the database table
+3. Import ID's from CSV-Table into the database table
 4. Delete old caretaker labels from the trees table: `UPDATE trees SET caretaker = NULL`
 5. JOIN new caretaker labels to the trees: `UPDATE trees t SET caretaker = 'Bezirk XY' FROM caretaker_ids c WHERE t.gmlid = c.id`
 6. Delete the no longer needed table: `DROP TABLE caretaker_ids`
@@ -174,6 +174,42 @@ In your fish shell run this command to enable completions:
 
 ```fish
 source completions/setup_cli_completions.fish
+```
+
+### zsh shell completions.
+
+Copy the completion file to your zsh completions directory:
+
+```bash
+cp completions/_giessdenkiez ~/.local/share/zsh/site-functions/
+```
+
+Make sure completions are enabled in your `.zshrc`:
+
+```bash
+autoload -Uz compinit && compinit
+```
+
+### bash shell completions.
+
+Copy the completion file to your bash completions directory:
+
+```bash
+cp completions/giessdenkiez.bash /etc/bash_completion.d/giessdenkiez
+```
+
+Or for user-specific installation:
+
+```bash
+cp completions/giessdenkiez.bash ~/.local/share/bash-completion/completions/giessdenkiez
+```
+
+Make sure bash completion is enabled in your `.bashrc`:
+
+```bash
+if [ -f /etc/bash_completion ]; then
+    . /etc/bash_completion
+fi
 ```
 
 ## Contributors ✨
