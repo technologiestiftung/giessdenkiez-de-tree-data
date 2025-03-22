@@ -6,7 +6,7 @@ import { doesTableExist } from "./utils.ts";
 
 export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 	const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();
-	const spinner = ora(`Starting upsert${dryRun ? " (dry-run)" : ""}`).start();
+	const spinner = ora(`${dryRun ? "[DRY RUN] " : ""}Starting upsert`).start();
 
 	try {
 		const tableExists = await doesTableExist(sql, tempTreesTable);
@@ -56,6 +56,14 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 		const insertCount = stats.find((s) => s.operation === "insert")?.count || 0;
 		const updateCount = stats.find((s) => s.operation === "update")?.count || 0;
 		const total = stats.find((s) => s.operation === "total")?.count || 0;
+
+		if (dryRun) {
+			spinner.info(`[DRY RUN] Would perform:
+		- ${insertCount} inserts
+		- ${updateCount} updates
+		- ${total} total operations`);
+			return;
+		}
 
 		spinner.info(`Would perform:
 		- ${insertCount} inserts
@@ -243,7 +251,7 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 			console.log(`Final count in database: ${finalCount[0].count}`);
 			console.log("\nUpsert completed successfully ✓");
 		} else {
-			spinner.succeed("Dry run complete");
+			spinner.succeed("[DRY RUN] Complete");
 		}
 	} catch (error: unknown) {
 		spinner.fail(

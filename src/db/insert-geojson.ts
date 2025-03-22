@@ -92,7 +92,9 @@ export async function insertGeoJson(
 				trees = []; // reset the trees array
 			}
 		}
-		spinner.succeed("Imported all trees");
+		spinner.succeed(
+			`${dryRun ? "[DRY RUN] Would import" : "Imported"} all trees`,
+		);
 	} catch (error: unknown) {
 		if (error instanceof UserError) {
 			await sql.end();

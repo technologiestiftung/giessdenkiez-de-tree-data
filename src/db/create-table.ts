@@ -6,13 +6,17 @@ import ora from "ora";
 
 export async function createTable(sql: postgres.Sql) {
 	// return a string that represents the sql statement to create the table
-	const { "temp-trees-table": tempTreesTable } = config();
+	const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();
 	const spinner = ora(`Creating table ${tempTreesTable}`).start();
 
 	try {
 		const tableExists = await doesTableExist(sql, tempTreesTable);
 		spinner.text = `Checking if table ${tempTreesTable} exists`;
 		if (!tableExists) {
+			if (dryRun) {
+				spinner.info(`[DRY RUN] Would create table ${tempTreesTable}`);
+				return;
+			}
 			await sql`
 		CREATE TABLE IF NOT EXISTS ${sql(tempTreesTable)} (
 			"gml_id" text,
