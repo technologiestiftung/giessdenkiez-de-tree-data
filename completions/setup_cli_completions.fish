@@ -13,6 +13,7 @@ function setup_giessdenkiez_completions --description 'Set completions for npx g
     complete -c npx -n '__fish_seen_subcommand_from giessdenkiez' -a '-r --dry-run' -d 'Perform a dry run. Default is false.'
     complete -c npx -n '__fish_seen_subcommand_from giessdenkiez' -a '-t --set-tree-type' -d 'Specify the type of tree during import, can be "anlage" or "strasse". Default is null.'
     complete -c npx -n '__fish_seen_subcommand_from giessdenkiez' -a '--get-wfs-data' -d 'Make a web request to the WFS server and save the data to a file.'
+    complete -c npx -n '__fish_seen_subcommand_from giessdenkiez' -a '--test-connection' -d 'Test database connection and print PostgreSQL version.'
     complete -c npx -n '__fish_seen_subcommand_from giessdenkiez' -a '--clean-up' -d 'Removes all temp tables.'
     complete -c npx -n '__fish_seen_subcommand_from giessdenkiez' -a '--pghost' -d 'Specify the PostgreSQL host. Default is the value of the PGHOST environment variable.'
     complete -c npx -n '__fish_seen_subcommand_from giessdenkiez' -a '--pgport' -d 'Specify the PostgreSQL port. Default is the value of the PGPORT environment variable.'
