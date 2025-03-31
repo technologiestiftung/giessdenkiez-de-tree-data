@@ -77,8 +77,8 @@ Options:
   -u --upsert-trees         Upsert all trees from the ${temp_trees_table} into the database.
   -r, --dry-run             Perform a dry run. Default is false.
   -t --set-tree-type        Specify the type of tree during import.
-  -n --temp-trees-tablename Specify the name of the temporary trees table. Default is "temp_trees".
                             Can be "anlage" or "strasse". Default is null.
+  -n --temp-trees-tablename Specify the name of the temporary trees table. Default is "temp_trees".
       --get-wfs-data        Make a webreqwuets to the WFS server and save the data to a file.
       --test-connection     Test database connection and print PostgreSQL version.
       --clean-up            Removes all temp tables.
