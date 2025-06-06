@@ -1,6 +1,6 @@
 owslib==0.23.0
 requests==2.25.1
-pandas==2.0.3
+pandas==2.3.0
 geopandas==0.13.2
 Shapely==1.7.1
 pytest==6.2.2
