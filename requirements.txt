@@ -1,4 +1,4 @@
-owslib==0.23.0
+owslib==0.34.1
 requests==2.25.1
 pandas==2.0.3
 geopandas==0.13.2
