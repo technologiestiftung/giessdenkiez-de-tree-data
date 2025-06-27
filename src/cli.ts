@@ -1,17 +1,19 @@
-// import ora from "ora";
-import { createDatabeConnection } from "./db.js";
-import { PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE } from "./env.js";
+#!/usr/bin/env node
+
+import { createDatabeConnection } from "./db.ts";
+import { PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE } from "./env.ts";
 import { parseArgs } from "node:util";
-import { geojsonImporter } from "./geojson-import.js";
-import { ApplicationError, UserError } from "./errors.js";
-import { config, setUserConfig } from "./config.js";
-import { TreeType } from "./common.js";
-import { createTable } from "./db/create-table.js";
-import { insertGeoJson } from "./db/insert-geojson.js";
-import { deleteTrees } from "./db/delete-trees.js";
-import { upsertTrees } from "./db/upsert-trees.js";
-import { cleanUp } from "./db/clean-up.js";
-import { getWfsData } from "./get-wfs-data.js";
+import { geojsonImporter } from "./geojson-import.ts";
+import { UserError } from "./errors.ts";
+import { config, setUserConfig } from "./config.ts";
+import type { TreeType } from "./common.ts";
+import { createTable } from "./db/create-table.ts";
+import { insertGeoJson } from "./db/insert-geojson.ts";
+import { deleteTrees } from "./db/delete-trees.ts";
+import { upsertTrees } from "./db/upsert-trees.ts";
+import { cleanUp } from "./db/clean-up.ts";
+import { getWfsData } from "./get-wfs-data.ts";
+import { testConnection } from "./db/utils.ts";
 // const spinner = ora("Loading unicorns").start();
 
 // const args = [
@@ -21,6 +23,7 @@ import { getWfsData } from "./get-wfs-data.js";
 // ];
 
 let treeType: TreeType | undefined = undefined;
+let comment: string | undefined = undefined;
 
 async function cli() {
 	try {
@@ -33,6 +36,12 @@ async function cli() {
 			options: {
 				"get-wfs-data": { type: "boolean" },
 				"create-temp-table": { type: "boolean", default: false, short: "c" },
+				"temp-trees-tablename": {
+					type: "string",
+					default: "temp_trees",
+					short: "n",
+				},
+				comment: { type: "string", short: "m" },
 				"set-tree-type": { type: "string", short: "t" },
 				"upsert-trees": { type: "boolean", default: false, short: "u" },
 				"dry-run": { type: "boolean", default: false, short: "r" },
@@ -40,6 +49,7 @@ async function cli() {
 				help: { type: "boolean", default: false, short: "h" },
 				"import-geojson": { type: "string", short: "i" },
 				"clean-up": { type: "boolean" },
+				"test-connection": { type: "boolean", default: false },
 				pghost: { type: "string", default: PGHOST },
 				pgport: { type: "string", default: PGPORT },
 				pguser: { type: "string", default: PGUSER },
@@ -48,8 +58,10 @@ async function cli() {
 			},
 			tokens: true,
 		});
-
-		setUserConfig({ "dry-run": values["dry-run"] });
+		setUserConfig({
+			"dry-run": values["dry-run"],
+			"temp-trees-table": values["temp-trees-tablename"],
+		});
 
 		const { "temp-trees-table": temp_trees_table } = config();
 
@@ -57,32 +69,34 @@ async function cli() {
 			// eslint-disable-next-line no-console
 			console.info(`Usage: command [options]
 Options:
-  -h, --help               Output usage information and exit.
-  -c, --create-temp-table  Create a new table ${temp_trees_table} and exit. Default is false.
-  -i, --import-geojson     Specify the path to the GeoJSON file you want to import.
-  -d --delete-trees        Delete all trees from the database that are not in the ${temp_trees_table}.
-  -u --upsert-trees        Upsert all trees from the ${temp_trees_table} into the database.
-  -r, --dry-run            Perform a dry run. Default is false.
-  -t --set-tree-type       Specify the type of tree during import.
-                           Can be "anlage" or "strasse". Default is null.
-      --get-wfs-data       Make a webreqwuets to the WFS server and save the data to a file.
+  -h, --help                Output usage information and exit.
+  -c, --create-temp-table   Create a new table ${temp_trees_table} and exit. Default is false.
+  -i, --import-geojson      Specify the path to the GeoJSON file you want to import.
+  -d --delete-trees         Delete all trees from the database that are not in the ${temp_trees_table}.
+  -m --comment              Specify the comment for the trees when inserted into the database.
+  -u --upsert-trees         Upsert all trees from the ${temp_trees_table} into the database.
+  -r, --dry-run             Perform a dry run. Default is false.
+  -t --set-tree-type        Specify the type of tree during import.
+                            Can be "anlage" or "strasse". Default is null.
+  -n --temp-trees-tablename Specify the name of the temporary trees table. Default is "temp_trees".
+      --get-wfs-data        Make a webreqwuets to the WFS server and save the data to a file.
+      --test-connection     Test database connection and print PostgreSQL version.
+      --clean-up            Removes all temp tables.
 
-      --clean-up           Removes all temp tables.
+      --pghost              Specify the PostgreSQL host.
+                            Default is the value of the PGHOST environment variable.
 
-      --pghost             Specify the PostgreSQL host.
-                           Default is the value of the PGHOST environment variable.
+      --pgport              Specify the PostgreSQL port.
+                            Default is the value of the PGPORT environment variable.
 
-      --pgport             Specify the PostgreSQL port.
-                           Default is the value of the PGPORT environment variable.
+      --pguser              Specify the PostgreSQL user.
+                            Default is the value of the PGUSER environment variable.
 
-      --pguser             Specify the PostgreSQL user.
-                           Default is the value of the PGUSER environment variable.
+      --pgpassword          Specify the PostgreSQL password.
+                            Default is the value of the PGPASSWORD environment variable.
 
-      --pgpassword         Specify the PostgreSQL password.
-                           Default is the value of the PGPASSWORD environment variable.
-
-      --pgdatabase         Specify the PostgreSQL database.
-                           Default is the value of the PGDATABASE environment variable.
+      --pgdatabase          Specify the PostgreSQL database.
+                            Default is the value of the PGDATABASE environment variable.
 `);
 			process.exit(0);
 		}
@@ -134,6 +148,10 @@ Options:
 			password,
 		};
 
+		if (values["comment"]) {
+			comment = values["comment"];
+		}
+
 		if (values["get-wfs-data"]) {
 			await getWfsData();
 			process.exit(0);
@@ -161,6 +179,7 @@ Options:
 			const sql = createDatabeConnection(databaseOptions);
 			const geojson = await geojsonImporter({
 				filePath: values["import-geojson"],
+				comment,
 			});
 
 			await insertGeoJson(sql, geojson, {
@@ -178,6 +197,23 @@ Options:
 		if (values["upsert-trees"]) {
 			const sql = createDatabeConnection(databaseOptions);
 			await upsertTrees(sql);
+			process.exit(0);
+		}
+
+		if (values["test-connection"]) {
+			if (!pgport || !pgdatabase || !pghost || !pgpassword || !pguser) {
+				throw new UserError("Missing required database connection parameters");
+			}
+			console.log("Database connection parameters:");
+			console.log(`Host: ${pghost}`);
+			console.log(`User: ${pguser}`);
+			console.log(`Database: ${pgdatabase}`);
+			console.log(`Port: ${pgport}`);
+			console.log(`Password: ${"*".repeat(pgpassword.length)}`);
+
+			const sql = createDatabeConnection(databaseOptions);
+			const version = await testConnection(sql);
+			console.log(`PostgreSQL version: ${version}`);
 			process.exit(0);
 		}
 

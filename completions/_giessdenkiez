@@ -1,0 +1,28 @@
+#compdef giessdenkiez
+
+_giessdenkiez() {
+    local -a options
+    options=(
+        '(-h --help)'{-h,--help}'[Output usage information and exit]'
+        '(-c --create-temp-table)'{-c,--create-temp-table}'[Create a new table temp_trees and exit]'
+        '(-i --import-geojson)'{-i,--import-geojson}'[Specify the path to the GeoJSON file you want to import]:file:_files'
+        '(-d --delete-trees)'{-d,--delete-trees}'[Delete all trees from the database that are not in the temp_trees]'
+        '(-m --comment)'{-m,--comment}'[Specify the comment for the trees when inserted into the database]'
+        '(-u --upsert-trees)'{-u,--upsert-trees}'[Upsert all trees from the temp_trees into the database]'
+        '(-r --dry-run)'{-r,--dry-run}'[Perform a dry run]'
+        '(-t --set-tree-type)'{-t,--set-tree-type}'[Specify the type of tree during import (anlage or strasse)]'
+        '(-n --temp-trees-tablename)'{-n,--temp-trees-tablename}'[Specify the name of the temporary trees table]'
+        '--get-wfs-data[Make a web request to the WFS server and save the data to a file]'
+        '--test-connection[Test database connection and print PostgreSQL version]'
+        '--clean-up[Removes all temp tables]'
+        '--pghost[Specify the PostgreSQL host]'
+        '--pgport[Specify the PostgreSQL port]'
+        '--pguser[Specify the PostgreSQL user]'
+        '--pgpassword[Specify the PostgreSQL password]'
+        '--pgdatabase[Specify the PostgreSQL database]'
+    )
+
+    _arguments -s $options
+}
+
+_giessdenkiez "$@"

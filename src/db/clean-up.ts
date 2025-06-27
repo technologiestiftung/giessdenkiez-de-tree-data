@@ -1,7 +1,7 @@
 import postgres from "postgres";
-import { config } from "../config.js";
-import { doesTableExist } from "./utils.js";
-import { UserError } from "../errors.js";
+import { config } from "../config.ts";
+import { doesTableExist } from "./utils.ts";
+import { UserError } from "../errors.ts";
 import ora from "ora";
 
 export async function cleanUp(sql: postgres.Sql) {

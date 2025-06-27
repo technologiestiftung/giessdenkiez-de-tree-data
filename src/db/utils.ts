@@ -31,3 +31,8 @@ export async function doesTableExist(
 		return false;
 	}
 }
+
+export async function testConnection(sql: postgres.Sql) {
+	const result = await sql`SELECT version()`;
+	return result[0].version;
+}

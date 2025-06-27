@@ -1,5 +1,5 @@
 import ora from "ora";
-import { delay } from "./utils.js";
+import { delay } from "./utils.ts";
 
 // Should first check if output folder exists
 // make the web request

@@ -1,4 +1,4 @@
-i#!/usr/bin/env bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -10,4 +10,5 @@ pg_restore \
 	--schema=public \
 	--table=trees \
 	--table=trees_watered \
-	--table=trees_adopted /backup/gdk-local.dump
+	--table=trees_adopted backup/gdk-production.dump
+

@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Used Languages
+
+This is a typescript project. It runs on nodejs >= 23 we can run typescript directly using node <file>.ts since nodejs does type stripping since v 23

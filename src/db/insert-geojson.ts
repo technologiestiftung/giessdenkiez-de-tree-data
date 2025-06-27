@@ -1,9 +1,9 @@
-import { FeatureCollection } from "geojson";
-import { TreeType } from "../common.js";
+import type { FeatureCollection } from "geojson";
+import type { TreeType } from "../common.ts";
 import postgres from "postgres";
-import { config } from "../config.js";
-import { doesTableExist } from "./utils.js";
-import { UserError } from "../errors.js";
+import { config } from "../config.ts";
+import { doesTableExist } from "./utils.ts";
+import { UserError } from "../errors.ts";
 import ora from "ora";
 
 export async function insertGeoJson(
@@ -64,12 +64,16 @@ export async function insertGeoJson(
 			}
 
 			const geom =
-				await sql`SELECT ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(
+				await sql`SELECT ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(
 					feature.geometry,
-				)}), 25833), 4326) as geom`;
+				)}), 4326) as geom`;
 
 			const tree: Record<string, string | number | null> = {
 				...properties,
+				// manually parse the pflanzjahr to a number
+				pflanzjahr: isNaN(parseInt(properties["pflanzjahr"]))
+					? null
+					: parseInt(properties["pflanzjahr"]),
 				geom: geom[0].geom,
 				type: treeType ?? null,
 			};
@@ -88,7 +92,9 @@ export async function insertGeoJson(
 				trees = []; // reset the trees array
 			}
 		}
-		spinner.succeed("Imported all trees");
+		spinner.succeed(
+			`${dryRun ? "[DRY RUN] Would import" : "Imported"} all trees`,
+		);
 	} catch (error: unknown) {
 		if (error instanceof UserError) {
 			await sql.end();
