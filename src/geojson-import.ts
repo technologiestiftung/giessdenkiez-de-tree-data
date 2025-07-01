@@ -1,14 +1,16 @@
 import path from "node:path";
-import { fileExists } from "./utils.js";
+import { fileExists } from "./utils.ts";
 import { readFile } from "node:fs/promises";
-import { FeatureCollection } from "geojson";
+import type { FeatureCollection } from "geojson";
 /**
  * Import a GeoJSON file from a specific path. Returns the parsed GeoJSON object.
  */
 export async function geojsonImporter({
 	filePath,
+	comment,
 }: {
 	filePath: string;
+	comment: string | undefined;
 }): Promise<FeatureCollection> {
 	try {
 		// 1. check if the file at the path exists
@@ -23,6 +25,13 @@ export async function geojsonImporter({
 
 		const file = await readFile(fullPath, "utf-8");
 		const json = JSON.parse(file) as FeatureCollection;
+		if (comment) {
+			json.features.forEach((feature) => {
+				if (feature.properties) {
+					feature.properties.comment = comment;
+				}
+			});
+		}
 		return json;
 	} catch (e: unknown) {
 		if (e instanceof Error) {

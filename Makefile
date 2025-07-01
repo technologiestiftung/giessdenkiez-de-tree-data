@@ -1,6 +1,6 @@
 # Define variables for docker commands
 IMAGE_NAME=technologiestiftung/giessdenkiez-de-tree-data
-CONTAINER_NAME=gdk-python-runner
+CONTAINER_NAME=gdk-runner
 
 
 # Build docker image

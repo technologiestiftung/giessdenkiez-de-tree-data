@@ -1,0 +1,7 @@
+services:
+  workspace:
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile

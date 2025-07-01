@@ -127,6 +127,12 @@ tree_data/data_files/*json
 tests/data/*json
 backup-and-restore/backup/*.dump
 
-.vscode
+
 .zed/settings.json
 tree_data/data_files/*.zip
+.envrc.production
+tree_data/data_files/*.qmd
+data-wrangling/2025/duplicate_trees/**/*
+.llm/
+data-explorer/public/dupes_gruen_anlage_line_converted.geojson
+data-explorer/public/dupes_gruen_street_line_converted.geojson
