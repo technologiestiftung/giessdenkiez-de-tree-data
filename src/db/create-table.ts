@@ -30,6 +30,7 @@ export async function createTable(sql: postgres.Sql) {
 			"gattung" text,
 			"art_gruppe" text,
 			"strname" text,
+			"strnr" text,
 			"hausnr" text,
 			"pflanzjahr" int4,
 			"standalter" text,

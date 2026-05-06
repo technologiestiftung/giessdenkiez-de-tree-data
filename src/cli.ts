@@ -1,4 +1,7 @@
 #!/usr/bin/env node
+/*eslint complexity: ["error", 30]*/
+/*eslint max-lines: ["error", 300]*/
+/* eslint no-console: "off" */
 
 import { createDatabeConnection } from "./db.ts";
 import { PGHOST, PGPORT, PGUSER, PGPASSWORD, PGDATABASE } from "./env.ts";
@@ -184,6 +187,7 @@ Options:
 
 			await insertGeoJson(sql, geojson, {
 				treeType,
+				sourceFilePath: values["import-geojson"],
 			});
 			process.exit(0);
 		}
