@@ -137,3 +137,6 @@ data-wrangling/2025/duplicate_trees/**/*
 data-explorer/public/dupes_gruen_anlage_line_converted.geojson
 data-explorer/public/dupes_gruen_street_line_converted.geojson
 *.geojson
+data-wrangling/2026/data-prep.qgz
+data-wrangling/2026/berlin-baumbestand-anlagenbaeume-2026.qmd
+data-wrangling/2026/berlin-baumbestand-strassenbaeume-2026.qmd
