@@ -2,6 +2,27 @@
 
 # Gieß den Kiez Tree data
 
+## TL;DR usage
+
+1. Prepare `.env` with `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
+2. Install dependencies: `nvm use && npm ci`
+3. Get the latest two GeoJSON files (`anlage` + `strasse`) into `./tree_data/data_files/`
+4. Run update steps in order:
+
+```bash
+node --env-file=.env src/cli.ts --create-temp-table
+node --env-file=.env src/cli.ts --import-geojson=./tree_data/data_files/<anlage-file>.geo.json --set-tree-type=anlage
+node --env-file=.env src/cli.ts --import-geojson=./tree_data/data_files/<strasse-file>.geo.json --set-tree-type=strasse
+node --env-file=.env src/cli.ts --delete-trees
+node --env-file=.env src/cli.ts --upsert-trees
+node --env-file=.env src/cli.ts --clean-up
+```
+
+5. Verify results on local/staging before production.
+6. Hint for local restores: if `pg_restore` fails with `relation "most_frequent_tree_species" does not exist`, disable the `public.trees` refresh triggers before restore and enable them afterwards (see [Restoring a production backup locally](#restoring-a-production-backup-locally)).
+
+## Description
+
 _This is a script to harvest tree data from a Web Feature Service from Berlins Geodata Portal and integrate it to our Gieß-den-Kiez-database._
 
 In the application [Gieß-den-Kiez.de](https://giessdenkiez.de), Berlin's street trees are displayed on a map. The data about the trees comes from Berlin's street and green space offices and is made available as open data via Berlin's Geodata portal, the [FIS-Broker](https://fbinter.stadt-berlin.de/fb/index.jsp). The underlying database, the green space information system (GRIS), is continuously maintained by the administration: Trees not yet recorded and newly planted trees are entered and felled trees are deleted. The data set is then updated in the Geodata portal once a year, always in spring. In order to reflect the current status, the data in Gieß den Kiez is therefore also updated once a year when the new [tree dataset](https://fbinter.stadt-berlin.de/fb/index.jsp?loginkey=zoomStart&mapId=k_wfs_baumbestand@senstadt&bbox=389138,5819243,390887,5820322) is published.
@@ -15,6 +36,7 @@ Using a Node.js cli we do the following steps:
 3. Delete all trees that are no longer in the new dataset
 4. Update and Insert (upsert) all trees that are in the new dataset
 5. Clean up the temporary table
+
 
 ## Requirements
 
@@ -35,7 +57,7 @@ We do not make assumptions how your environment loads variables. At Technologies
 PGHOST=
 PGPORT=
 PGUSER=
-PG_PASSWORD=
+PGPASSWORD=
 PGDATABASE=
 ```
 
@@ -145,6 +167,31 @@ This will drop the temporary table `temp_trees`.
 
 ```bash
 node src/cli.ts --clean-up
+```
+
+## Restoring a production backup locally
+
+When restoring `backup-and-restore/backup/gdk-production.dump`, triggers on `public.trees` refresh materialized views. During `pg_restore`, this can fail with `relation "most_frequent_tree_species" does not exist` even if the view exists.
+
+For local restores, disable these triggers before restore, then enable and refresh after restore.
+
+```bash
+# before restore
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees DISABLE TRIGGER tg_refresh_trees_count_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees DISABLE TRIGGER tg_refresh_most_frequent_tree_species_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees DISABLE TRIGGER tg_refresh_total_tree_species_count_mv;"
+
+# restore
+./backup-and-restore/restore.sh
+
+# after restore
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees ENABLE TRIGGER tg_refresh_trees_count_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees ENABLE TRIGGER tg_refresh_most_frequent_tree_species_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees ENABLE TRIGGER tg_refresh_total_tree_species_count_mv;"
+
+psql -d "$PGDATABASE" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.trees_count;"
+psql -d "$PGDATABASE" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.most_frequent_tree_species;"
+psql -d "$PGDATABASE" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.total_tree_species_count;"
 ```
 
 ## Updating Caretaker labels
