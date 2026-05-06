@@ -19,10 +19,12 @@ RUN apt-get update && apt-get install -y \
 	vim \
 	magic-wormhole \
 	curl \
+	fish \
+	zsh \
 	&& rm -rf /var/lib/apt/lists/*
 
 # Install Node.js v23.9.0
-RUN curl -fsSL https://deb.nodesource.com/setup_23.x | bash - \
+RUN curl -fsSL https://deb.nodesource.com/setup_26.x | bash - \
     && apt-get update \
     && apt-get install -y nodejs \
     && npm install -g npm@latest \

@@ -5,3 +5,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    working_dir: /usr/app
+    volumes:
+      - .:/usr/app
+      - gdk_node_modules:/usr/app/node_modules
+      - ./backup-and-restore:/usr/app/backup-and-restore
+    command: sleep infinity
+
+volumes:
+  gdk_node_modules:
