@@ -13,13 +13,17 @@
 node --env-file=.env src/cli.ts --create-temp-table
 node --env-file=.env src/cli.ts --import-geojson=./tree_data/data_files/<anlage-file>.geo.json --set-tree-type=anlage
 node --env-file=.env src/cli.ts --import-geojson=./tree_data/data_files/<strasse-file>.geo.json --set-tree-type=strasse
+# need to create the right  ids in temp_trees. Run the script
+# sql/normalize-temp-tree-ids.sql against the database to do this.
 node --env-file=.env src/cli.ts --delete-trees
 node --env-file=.env src/cli.ts --upsert-trees
 node --env-file=.env src/cli.ts --clean-up
 ```
 
 5. Verify results on local/staging before production.
-6. Hint for local restores: if `pg_restore` fails with `relation "most_frequent_tree_species" does not exist`, disable the `public.trees` refresh triggers before restore and enable them afterwards (see [Restoring a production backup locally](#restoring-a-production-backup-locally)).
+6. !Hint: For local restores: if `pg_restore` fails with `relation "most_frequent_tree_species" does not exist`, disable the `public.trees` refresh triggers before restore and enable them afterwards (see [Restoring a production backup locally](#restoring-a-production-backup-locally)).
+7. !Hint: When tested on the staging environment you can use 
+  `backup-and-restore/backup-temp-trees.sh` and `backup-and-restore/restore-temp-trees.sh` to move the temp_trees data from the staging to the production database. No need to inport the data from the geojson files again.
 
 ## Description
 
