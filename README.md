@@ -4,6 +4,10 @@
 
 ## TL;DR usage
 
+> [!WARNING]  
+> This is a very short version for when you already know the process. Please read the full documentation below for more details and hints.
+
+
 1. Prepare `.env` with `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
 2. Install dependencies: `nvm use && npm ci`
 3. Get the latest two GeoJSON files (`anlage` + `strasse`) into `./tree_data/data_files/`
