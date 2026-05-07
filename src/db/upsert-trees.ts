@@ -6,7 +6,7 @@ import { doesTableExist } from "./utils.ts";
 import {
 	formatBatchCompletionMessage,
 	formatBatchStartMessage,
-} from "./upsert-progress.ts";
+} from "./batch-progress.ts";
 
 export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 	const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();

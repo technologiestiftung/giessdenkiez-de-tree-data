@@ -1,4 +1,4 @@
-// ABOUTME: Tests progress message formatting for tree upsert batches.
+// ABOUTME: Tests progress message formatting for batched database operations.
 // ABOUTME: Verifies timestamps, elapsed time, batch duration, and ETA output.
 
 import test from "node:test";
@@ -7,7 +7,7 @@ import {
 	formatBatchCompletionMessage,
 	formatBatchStartMessage,
 	formatDuration,
-} from "../src/db/upsert-progress.ts";
+} from "../src/db/batch-progress.ts";
 
 test("formatDuration renders compact durations", () => {
 	assert.equal(formatDuration(0), "0s");
@@ -18,6 +18,7 @@ test("formatDuration renders compact durations", () => {
 
 test("formatBatchStartMessage shows timestamp and waits for ETA data", () => {
 	const message = formatBatchStartMessage({
+		operation: "Batch",
 		batchNumber: 1,
 		totalBatches: 5,
 		currentCount: 1,
@@ -35,6 +36,7 @@ test("formatBatchStartMessage shows timestamp and waits for ETA data", () => {
 
 test("formatBatchStartMessage estimates remaining time from completed batches", () => {
 	const message = formatBatchStartMessage({
+		operation: "Batch",
 		batchNumber: 3,
 		totalBatches: 5,
 		currentCount: 1_001,

@@ -1,7 +1,8 @@
-// ABOUTME: Formats progress output for batched tree upserts.
+// ABOUTME: Formats progress output for batched database operations.
 // ABOUTME: Calculates elapsed time, average batch duration, ETA, and timestamps.
 
 export type BatchStartProgress = {
+	operation?: string;
 	batchNumber: number;
 	totalBatches: number;
 	currentCount: number;
@@ -44,7 +45,8 @@ export function formatDuration(milliseconds: number): string {
 export function formatBatchStartMessage(progress: BatchStartProgress): string {
 	const percentage = Math.round((progress.endCount / progress.totalItems) * 100);
 	const elapsedMs = progress.nowMs - progress.startTimeMs;
-	const prefix = `[${formatTimestamp(progress.nowMs)}] Batch ${progress.batchNumber}/${progress.totalBatches}: ${progress.currentCount}-${progress.endCount}/${progress.totalItems} (${percentage}%)`;
+	const operation = progress.operation ?? "Batch";
+	const prefix = `[${formatTimestamp(progress.nowMs)}] ${operation} ${progress.batchNumber}/${progress.totalBatches}: ${progress.currentCount}-${progress.endCount}/${progress.totalItems} (${percentage}%)`;
 
 	if (progress.completedBatches === 0) {
 		return `${prefix} | elapsed ${formatDuration(elapsedMs)} | ETA calculating after first batch`;
