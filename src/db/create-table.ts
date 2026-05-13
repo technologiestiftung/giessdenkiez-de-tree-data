@@ -58,6 +58,16 @@ export async function createTable(sql: postgres.Sql) {
 			"geom" geometry(Geometry,4326))
 
 			`;
+
+			const apiRoles = await sql<{ rolname: string }[]>`
+				SELECT rolname
+				FROM pg_roles
+				WHERE rolname IN ('anon', 'authenticated')`;
+
+			for (const { rolname } of apiRoles) {
+				await sql`REVOKE ALL ON TABLE ${sql(tempTreesTable)} FROM ${sql(rolname)}`;
+			}
+
 			spinner.succeed(`Table ${tempTreesTable} created`);
 		} else {
 			spinner.fail(`Table ${tempTreesTable} already exists`);

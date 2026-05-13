@@ -1,5 +1,5 @@
 -- ABOUTME: Fills temp_trees.gml_id from pitid/gisid after GeoJSON import.
--- ABOUTME: Includes validation queries to compare imported IDs with trees.id format.
+-- ABOUTME: Adds indexes and validation queries before delete/upsert steps.
 
 -- Replace temp_trees if you use a different temp table name.
 
@@ -19,6 +19,15 @@ UPDATE temp_trees
 SET gml_id = replace(gisid, '_', ':')
 WHERE (gml_id IS NULL OR gml_id = '')
 	AND gisid ~ '^[0-9]{8}_[0-9a-f]+$';
+
+CREATE INDEX IF NOT EXISTS temp_trees_gml_id_idx
+ON public.temp_trees (gml_id);
+
+CREATE INDEX IF NOT EXISTS temp_trees_unprocessed_gml_id_idx
+ON public.temp_trees (gml_id)
+WHERE processed = false;
+
+ANALYZE public.temp_trees;
 
 SELECT
 	COUNT(*) AS total,
