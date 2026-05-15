@@ -3,6 +3,14 @@ import { UserError } from "../errors.ts";
 import { config } from "../config.ts";
 import ora from "ora";
 import { doesTableExist } from "./utils.ts";
+import {
+	formatBatchCompletionMessage,
+	formatBatchStartMessage,
+} from "./batch-progress.ts";
+import {
+	getUpsertRetryDelayMs,
+	getUpsertRetryLimit,
+} from "./upsert-retry-policy.ts";
 
 export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 	const { "temp-trees-table": tempTreesTable, "dry-run": dryRun } = config();
@@ -76,6 +84,7 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 			console.log("Starting upsert process...");
 			let processedCount = 0;
 			let batchNumber = 0;
+			const upsertStartTimeMs = Date.now();
 
 			// First get all IDs
 			console.log("Fetching IDs...");
@@ -93,7 +102,9 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 				return;
 			}
 
-			console.log(`Will process in batches of ${batchSize}`);
+			console.log(
+				`Will process in batches of ${batchSize}. Started at ${new Date(upsertStartTimeMs).toISOString()}`,
+			);
 
 			// Process in chunks
 			for (let i = 0; i < allIds.length; i += batchSize) {
@@ -102,16 +113,26 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 
 				const currentCount = i + 1;
 				const endCount = Math.min(i + batchSize, allIds.length);
-				const percentage = Math.round((currentCount / allIds.length) * 100);
 				console.log(
-					`Batch ${batchNumber}/${totalBatches}: ${currentCount}-${endCount}/${allIds.length} (${percentage}%)`,
+					formatBatchStartMessage({
+						batchNumber,
+						totalBatches,
+						currentCount,
+						endCount,
+						totalItems: allIds.length,
+						completedBatches: batchNumber - 1,
+						startTimeMs: upsertStartTimeMs,
+						nowMs: Date.now(),
+					}),
 				);
 
-				const MAX_RETRIES = 3;
+				const batchStartTimeMs = Date.now();
+
 				let retries = 0;
 				let lastError: unknown;
+				let retryLimit = 3;
 
-				while (retries < MAX_RETRIES) {
+				while (retries < retryLimit) {
 					try {
 						await sql.begin(async (sql) => {
 							// Set transaction isolation level inside the transaction
@@ -216,29 +237,32 @@ export async function upsertTrees(sql: postgres.Sql, batchSize = 500) {
 
 							const affectedCount = result.length;
 							processedCount = Number(processedCount) + affectedCount;
-							const progressPercent = Math.round(
-								(processedCount / total) * 100,
-							);
 							console.log(
-								`  ✓ Affected rows: ${affectedCount} (Total: ${processedCount}/${total} - ${progressPercent}%)`,
+								formatBatchCompletionMessage({
+									affectedCount,
+									processedCount,
+									totalItems: Number(total),
+									batchDurationMs: Date.now() - batchStartTimeMs,
+									nowMs: Date.now(),
+								}),
 							);
 						});
 						break; // Success, exit retry loop
 					} catch (err: unknown) {
 						lastError = err;
+						retryLimit = getUpsertRetryLimit(err);
 						retries++;
 
-						if (retries === MAX_RETRIES) {
+						if (retries === retryLimit) {
 							console.error(
-								`Failed after ${MAX_RETRIES} retries. Last error:`,
+								`Failed after ${retryLimit} retries. Last error:`,
 								lastError,
 							);
 							throw lastError;
 						}
 
-						// Exponential backoff: 1s, 2s, 4s
-						const delay = Math.pow(2, retries - 1) * 1000;
-						console.log(`Retry ${retries}/${MAX_RETRIES} after ${delay}ms...`);
+						const delay = getUpsertRetryDelayMs(retries);
+						console.log(`Retry ${retries}/${retryLimit} after ${delay}ms...`);
 						await new Promise((r) => setTimeout(r, delay));
 					}
 				}

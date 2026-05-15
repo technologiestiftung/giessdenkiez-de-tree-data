@@ -2,6 +2,38 @@
 
 # Gieß den Kiez Tree data
 
+## TL;DR usage
+
+> [!WARNING]  
+> This is a very short version for when you already know the process. Please read the full documentation below for more details and hints.
+
+
+1. Prepare `.env` with `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
+2. Install dependencies: `mise install && npm ci`
+3. Get the latest two GeoJSON files (`anlage` + `strasse`) into `./tree_data/data_files/`
+4. Run update steps in order:
+
+```bash
+node --env-file=.env src/cli.ts --create-temp-table
+node --env-file=.env src/cli.ts --import-geojson=./tree_data/data_files/<anlage-file>.geo.json --set-tree-type=anlage
+node --env-file=.env src/cli.ts --import-geojson=./tree_data/data_files/<strasse-file>.geo.json --set-tree-type=strasse
+# need to create the right ids in temp_trees. Run the script
+# sql/normalize-temp-tree-ids.sql against the database to do this.
+psql -d "$PGDATABASE" -f sql/normalize-temp-tree-ids.sql
+psql -d "$PGDATABASE" -f sql/disable-tree-refresh-triggers.sql
+node --env-file=.env src/cli.ts --delete-trees
+node --env-file=.env src/cli.ts --upsert-trees
+psql -d "$PGDATABASE" -f sql/enable-tree-refresh-triggers.sql
+node --env-file=.env src/cli.ts --clean-up
+```
+
+5. Verify results on local/staging before production.
+6. !Hint: For local restores: if `pg_restore` fails with `relation "most_frequent_tree_species" does not exist`, disable the `public.trees` refresh triggers before restore and enable them afterwards (see [Restoring a production backup locally](#restoring-a-production-backup-locally)).
+7. !Hint: When tested on the staging environment you can use 
+  `backup-and-restore/backup-temp-trees.sh` and `backup-and-restore/restore-temp-trees.sh` to move the temp_trees data from the staging to the production database. No need to import the data from the GeoJSON files again. The restore script resets `temp_trees.processed` to `false` so the production upsert can process all rows.
+
+## Description
+
 _This is a script to harvest tree data from a Web Feature Service from Berlins Geodata Portal and integrate it to our Gieß-den-Kiez-database._
 
 In the application [Gieß-den-Kiez.de](https://giessdenkiez.de), Berlin's street trees are displayed on a map. The data about the trees comes from Berlin's street and green space offices and is made available as open data via Berlin's Geodata portal, the [FIS-Broker](https://fbinter.stadt-berlin.de/fb/index.jsp). The underlying database, the green space information system (GRIS), is continuously maintained by the administration: Trees not yet recorded and newly planted trees are entered and felled trees are deleted. The data set is then updated in the Geodata portal once a year, always in spring. In order to reflect the current status, the data in Gieß den Kiez is therefore also updated once a year when the new [tree dataset](https://fbinter.stadt-berlin.de/fb/index.jsp?loginkey=zoomStart&mapId=k_wfs_baumbestand@senstadt&bbox=389138,5819243,390887,5820322) is published.
@@ -16,6 +48,7 @@ Using a Node.js cli we do the following steps:
 4. Update and Insert (upsert) all trees that are in the new dataset
 5. Clean up the temporary table
 
+
 ## Requirements
 
 - Python >= 3.9
@@ -27,7 +60,7 @@ Using a Node.js cli we do the following steps:
 
 ### Environment Variables
 
-We do not make assumptions how your environment loads variables. At Technologiestiftung we use [direnv](https://direnv.net/) to manage our environment variables. You can also use a `.env` file to store your environment variables and load it with [the `--env-file` flag from Node.js](https://nodejs.org/en/learn/command-line/how-to-read-environment-variables-from-nodejs).
+We do not make assumptions how your environment loads variables. At Technologiestiftung we use [mise](https://mise.en.dev/) or [direnv](https://direnv.net/) to manage our environment variables. You can also use a `.env` file to store your environment variables and load it with [the `--env-file` flag from Node.js](https://nodejs.org/en/learn/command-line/how-to-read-environment-variables-from-nodejs).
 
 `.env` contains database credentials.
 
@@ -35,7 +68,7 @@ We do not make assumptions how your environment loads variables. At Technologies
 PGHOST=
 PGPORT=
 PGUSER=
-PG_PASSWORD=
+PGPASSWORD=
 PGDATABASE=
 ```
 
@@ -99,9 +132,12 @@ Below are the main steps you need to take to update the database. Each step shou
 
 1. create-temp-table
 2. import-geojson
-3. delete-trees
-4. upsert-trees
-5. clean-up
+3. normalize-temp-tree-ids
+4. disable-tree-refresh-triggers
+5. delete-trees
+6. upsert-trees
+7. enable-tree-refresh-triggers
+8. clean-up
 
 Test your process on a local version of the database before running it on the production database.
 
@@ -123,6 +159,24 @@ node src/cli.ts --import-geojson=./tree_data/data_files/s_wfs_baumbestand_an_202
 node src/cli.ts --import-geojson=./tree_data/data_files/s_wfs_baumbestand_2025-3-10.geo.json --set-tree-type=strasse
 ```
 
+#### Normalize temp tree IDs
+
+The 2026 files use `pitid`/`gisid` instead of `gml_id`. Normalize IDs and create helper indexes before deleting or upserting.
+
+```bash
+psql -d "$PGDATABASE" -f sql/normalize-temp-tree-ids.sql
+```
+
+#### Disable materialized-view refresh triggers
+
+For bulk updates, disable the `public.trees` triggers that refresh materialized views. This avoids refreshing the materialized views after every delete/upsert batch.
+
+```bash
+psql -d "$PGDATABASE" -f sql/disable-tree-refresh-triggers.sql
+```
+
+The materialized views are stale while these triggers are disabled. Run the enable script after `delete-trees` and `upsert-trees` finish.
+
 #### Delete all trees that are no longer in the new dataset
 
 This will remove all trees from the table `trees` that are not in the temporary table `temp_trees`. It will also clean out the tables `trees_adopted` and `trees_watered`.
@@ -139,12 +193,63 @@ This will update all trees that are in the temporary table `temp_trees` and inse
 node src/cli.ts --upsert-trees
 ```
 
+#### Re-enable materialized-view refresh triggers
+
+Re-enable the `public.trees` refresh triggers and refresh the materialized views once after the bulk update.
+
+```bash
+psql -d "$PGDATABASE" -f sql/enable-tree-refresh-triggers.sql
+```
+
 #### Clean up the temporary table
 
 This will drop the temporary table `temp_trees`.
 
 ```bash
 node src/cli.ts --clean-up
+```
+
+## Moving temp_trees between environments
+
+After testing the import on staging, you can move `temp_trees` to production without importing the GeoJSON files again.
+
+On staging:
+
+```bash
+./backup-and-restore/backup-temp-trees.sh
+```
+
+Copy `backup-and-restore/backup/gdk-temp_trees.dump` to production, then run:
+
+```bash
+./backup-and-restore/restore-temp-trees.sh
+```
+
+The restore script resets `temp_trees.processed` to `false`. This is required because staging may have already processed the rows, but production still needs to run `--upsert-trees`.
+
+## Restoring a production backup locally
+
+When restoring `backup-and-restore/backup/gdk-production.dump`, triggers on `public.trees` refresh materialized views. During `pg_restore`, this can fail with `relation "most_frequent_tree_species" does not exist` even if the view exists.
+
+For local restores, disable these triggers before restore, then enable and refresh after restore.
+
+```bash
+# before restore
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees DISABLE TRIGGER tg_refresh_trees_count_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees DISABLE TRIGGER tg_refresh_most_frequent_tree_species_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees DISABLE TRIGGER tg_refresh_total_tree_species_count_mv;"
+
+# restore
+./backup-and-restore/restore.sh
+
+# after restore
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees ENABLE TRIGGER tg_refresh_trees_count_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees ENABLE TRIGGER tg_refresh_most_frequent_tree_species_mv;"
+psql -d "$PGDATABASE" -c "ALTER TABLE public.trees ENABLE TRIGGER tg_refresh_total_tree_species_count_mv;"
+
+psql -d "$PGDATABASE" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.trees_count;"
+psql -d "$PGDATABASE" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.most_frequent_tree_species;"
+psql -d "$PGDATABASE" -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.total_tree_species_count;"
 ```
 
 ## Updating Caretaker labels

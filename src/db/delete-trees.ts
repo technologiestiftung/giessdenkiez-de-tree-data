@@ -4,6 +4,10 @@ import { doesTableExist } from "./utils.ts";
 import { UserError } from "../errors.ts";
 import ora from "ora";
 import { delay } from "../utils.ts";
+import {
+	formatBatchCompletionMessage,
+	formatBatchStartMessage,
+} from "./batch-progress.ts";
 
 export async function deleteTrees(sql: postgres.Sql, batchSize = 100) {
 	try {
@@ -78,12 +82,54 @@ WHERE id IN (
 
 		if (!dryRun) {
 			const limit = batchSize;
-			spinner.start(`Removing ${resultTrees.length} records from table trees`);
+			const totalBatches = Math.ceil(resultTrees.length / limit);
+			const deleteStartTimeMs = Date.now();
+			let deletedCount = 0;
+			let batchNumber = 0;
+
+			spinner.stop();
+			console.log(
+				`Removing ${resultTrees.length} records from table trees in batches of ${limit}. Started at ${new Date(deleteStartTimeMs).toISOString()}`,
+			);
+
 			for (let i = 0; i < resultTrees.length; i += limit) {
+				batchNumber++;
 				const batch = resultTrees.slice(i, i + limit);
-				spinner.text = `Removing batch ${i + 1}-${i + 1 + limit}/${resultTrees.length} records from table trees`;
-				await sql`DELETE FROM trees WHERE id IN ${sql(batch.map((r) => r.id))}`;
+				const currentCount = i + 1;
+				const endCount = Math.min(i + limit, resultTrees.length);
+				console.log(
+					formatBatchStartMessage({
+						operation: "Delete batch",
+						batchNumber,
+						totalBatches,
+						currentCount,
+						endCount,
+						totalItems: resultTrees.length,
+						completedBatches: batchNumber - 1,
+						startTimeMs: deleteStartTimeMs,
+						nowMs: Date.now(),
+					}),
+				);
+
+				const batchStartTimeMs = Date.now();
+				const result = await sql`
+					DELETE FROM trees
+					WHERE id IN ${sql(batch.map((r) => r.id))}
+					RETURNING id`;
+				const affectedCount = result.length;
+				deletedCount += affectedCount;
+				console.log(
+					formatBatchCompletionMessage({
+						affectedCount,
+						processedCount: deletedCount,
+						totalItems: resultTrees.length,
+						batchDurationMs: Date.now() - batchStartTimeMs,
+						nowMs: Date.now(),
+					}),
+				);
 			}
+
+			spinner.start();
 		}
 		spinner.succeed(
 			`${dryRun ? "[DRY RUN] " : ""}${dryRun ? "Would remove" : "Removed"} ${resultTrees.length} records from table trees`,
