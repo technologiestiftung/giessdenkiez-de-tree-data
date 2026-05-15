@@ -9,7 +9,7 @@
 
 
 1. Prepare `.env` with `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD`, `PGDATABASE`
-2. Install dependencies: `nvm use && npm ci`
+2. Install dependencies: `mise install && npm ci`
 3. Get the latest two GeoJSON files (`anlage` + `strasse`) into `./tree_data/data_files/`
 4. Run update steps in order:
 
@@ -57,7 +57,7 @@ Using a Node.js cli we do the following steps:
 
 ### Environment Variables
 
-We do not make assumptions how your environment loads variables. At Technologiestiftung we use [direnv](https://direnv.net/) to manage our environment variables. You can also use a `.env` file to store your environment variables and load it with [the `--env-file` flag from Node.js](https://nodejs.org/en/learn/command-line/how-to-read-environment-variables-from-nodejs).
+We do not make assumptions how your environment loads variables. At Technologiestiftung we use [mise](https://mise.en.dev/) or [direnv](https://direnv.net/) to manage our environment variables. You can also use a `.env` file to store your environment variables and load it with [the `--env-file` flag from Node.js](https://nodejs.org/en/learn/command-line/how-to-read-environment-variables-from-nodejs).
 
 `.env` contains database credentials.
 
