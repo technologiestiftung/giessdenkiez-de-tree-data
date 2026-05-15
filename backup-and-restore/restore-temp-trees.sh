@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ABOUTME: Restores only public.temp_trees from a PostgreSQL custom dump.
-# ABOUTME: Recreates temp_trees when schema is present, or truncates before data-only restore.
+# ABOUTME: Recreates temp_trees and resets processed flags for target DB upsert.
 
 set -euo pipefail
 IFS=$'\n\t'
@@ -47,4 +47,9 @@ else
 		--table=temp_trees
 fi
 
-echo "Restored temp_trees from ${DUMP_PATH} into ${DB_NAME}"
+psql \
+	--set=ON_ERROR_STOP=1 \
+	--dbname="${DB_NAME}" \
+	--command="UPDATE public.temp_trees SET processed = false;"
+
+echo "Restored temp_trees from ${DUMP_PATH} into ${DB_NAME} and reset processed flags"
