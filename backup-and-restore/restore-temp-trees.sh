@@ -16,34 +16,35 @@ fi
 
 ARCHIVE_LIST="$(pg_restore --list "${DUMP_PATH}")"
 
+restore_dump() {
+	pg_restore --file=- "$@" "${DUMP_PATH}" \
+		| sed '/^SET transaction_timeout = 0;$/d' \
+		| psql \
+			--set=ON_ERROR_STOP=1 \
+			--single-transaction \
+			--dbname="${DB_NAME}"
+}
+
 if grep -qE ' TABLE public temp_trees ' <<<"${ARCHIVE_LIST}"; then
-	pg_restore \
-		--exit-on-error \
-		--single-transaction \
+	restore_dump \
 		--clean \
 		--if-exists \
 		--no-owner \
 		--no-privileges \
-		--dbname="${DB_NAME}" \
 		--schema=public \
-		--table=temp_trees \
-		"${DUMP_PATH}"
+		--table=temp_trees
 else
 	psql \
 		--set=ON_ERROR_STOP=1 \
 		--dbname="${DB_NAME}" \
 		--command="TRUNCATE TABLE public.temp_trees;"
 
-	pg_restore \
-		--exit-on-error \
-		--single-transaction \
+	restore_dump \
 		--data-only \
 		--no-owner \
 		--no-privileges \
-		--dbname="${DB_NAME}" \
 		--schema=public \
-		--table=temp_trees \
-		"${DUMP_PATH}"
+		--table=temp_trees
 fi
 
 echo "Restored temp_trees from ${DUMP_PATH} into ${DB_NAME}"
