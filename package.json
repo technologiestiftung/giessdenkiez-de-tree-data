@@ -16,16 +16,16 @@
 	"author": "ff6347 <hash@ff6347.email>",
 	"license": "MIT",
 	"devDependencies": {
-		"@technologiestiftung/eslint-config": "0.1.4",
+		"@technologiestiftung/eslint-config": "0.4.1",
 		"@technologiestiftung/prettier-config": "1.0.0",
 		"@technologiestiftung/semantic-release-config": "1.2.4",
-		"@types/geojson": "7946.0.14",
-		"@types/node": "22.13.10",
-		"globals": "15.0.0",
-		"prettier": "3.2.5",
-		"semantic-release": "23.0.6",
-		"tsx": "4.7.2",
-		"typescript": "5.8.2"
+		"@types/geojson": "7946.0.16",
+		"@types/node": "22.19.17",
+		"globals": "15.15.0",
+		"prettier": "3.8.3",
+		"semantic-release": "23.1.1",
+		"tsx": "4.21.0",
+		"typescript": "5.9.3"
 	},
 	"dependencies": {
 		"ora": "8.0.1",
