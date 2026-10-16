@@ -28,7 +28,7 @@
 		"typescript": "5.8.2"
 	},
 	"dependencies": {
-		"ora": "8.0.1",
-		"postgres": "3.4.4"
+		"ora": "8.2.0",
+		"postgres": "3.4.9"
 	}
 }
